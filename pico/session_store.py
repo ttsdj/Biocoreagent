@@ -175,15 +175,25 @@ class SessionStore:
                 ),
             )
 
-    def create_chunks(self, session_id, *, max_chars=1800, overlap_chars=180):
+    def create_chunks(self, session_id, *, max_chars=1800, overlap_chars=180, strategy="fixed"):
         """Chunk a persisted session and return immutable source-addressable rows.
 
         Chunk ids include the exact content hash, so a later edited/rewritten
         history never silently changes the evidence behind an existing memory.
+
+        Args:
+            strategy:
+                "fixed"    — 默认，按字符上限在消息边界处贪心打包（保持原有行为）。
+                "semantic" — 在角色/工具切换、段落空行、标题行（## 等）这类自然
+                    边界处优先断块，避免把跨段落/跨语轮的上下文从中间切开。
+                    semantic 不再做字符重叠（overlap 仅对 fixed 生效），
+                    chunk_id / source_uri（含 #sha256）寻址格式不变。
         """
         session_id = str(session_id)
         max_chars = max(200, int(max_chars))
         overlap_chars = max(0, min(int(overlap_chars), max_chars // 2))
+        if strategy == "semantic":
+            overlap_chars = 0
         with self._lock, closing(self._connect()) as connection:
             rows = connection.execute(
                 """
@@ -200,10 +210,14 @@ class SessionStore:
                 blocks.append(
                     {
                         "index": int(row["message_index"]),
+                        "label": label,
                         "text": f"[{label}] {row['content']}",
+                        "content": str(row["content"]),
                         "created_at": str(row["created_at"]),
                     }
                 )
+            if strategy == "semantic":
+                return self._pack_semantic(connection, session_id, blocks, max_chars)
             created = []
             start = 0
             while start < len(blocks):
@@ -262,6 +276,81 @@ class SessionStore:
                     start = cursor
             connection.commit()
         return created
+
+    # ------------------------------------------------------------------
+    # Semantic chunking (strategy="semantic")
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _is_section_opener(blocks, index):
+        """blocks[index] 是否开始一个新的语义段落。
+
+        三个判据（满足任一即为断块点）：
+          1. 与前一条消息的角色/工具标签不同（跨语轮/切换工具）；
+          2. 本条内容以 Markdown 标题（# / ## 等）开头；
+          3. 本条内容内出现段落空行（\\n\\n），视为新段落。
+        """
+        if index == 0:
+            return True
+        prev = blocks[index - 1]
+        curr = blocks[index]
+        if prev["label"] != curr["label"]:
+            return True
+        if curr["content"].lstrip().startswith("#"):
+            return True
+        if "\n\n" in curr["content"]:
+            return True
+        return False
+
+    def _pack_semantic(self, connection, session_id, blocks, max_chars):
+        """按语义边界打包：每个 chunk 从一条「新段落」开始，避免从半句切开。"""
+        created = []
+        index = 0
+        while index < len(blocks):
+            selected = [blocks[index]]
+            size = len(blocks[index]["text"])
+            cursor = index + 1
+            while cursor < len(blocks):
+                addition = len(blocks[cursor]["text"]) + 1
+                if self._is_section_opener(blocks, cursor) or size + addition > max_chars:
+                    break
+                selected.append(blocks[cursor])
+                size += addition
+                cursor += 1
+            created.append(
+                self._emit_chunk(connection, session_id, selected)
+            )
+            index = cursor
+        connection.commit()
+        return created
+
+    def _emit_chunk(self, connection, session_id, selected):
+        """把一段选中的 blocks 落库为一行 conversation_chunk，返回可寻址行。"""
+        content = "\n".join(item["text"] for item in selected)
+        digest = self._content_hash(content)
+        first, last = selected[0]["index"], selected[-1]["index"]
+        chunk_id = f"chunk_{session_id}_{first}_{last}_{digest[:16]}"
+        source_uri = f"session://{session_id}/messages/{first}-{last}#sha256={digest}"
+        created_at = selected[-1]["created_at"] or datetime.now(timezone.utc).isoformat()
+        connection.execute(
+            """
+            INSERT OR IGNORE INTO conversation_chunks (
+                chunk_id, session_id, start_message_index, end_message_index,
+                content, content_sha256, source_uri, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (chunk_id, session_id, first, last, content, digest, source_uri, created_at),
+        )
+        return {
+            "chunk_id": chunk_id,
+            "session_id": session_id,
+            "start_message_index": first,
+            "end_message_index": last,
+            "content": content,
+            "content_sha256": digest,
+            "source_uri": source_uri,
+            "created_at": created_at,
+        }
 
     def enqueue_distillation(self, chunks, *, metadata=None):
         timestamp = datetime.now(timezone.utc).isoformat()

@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "case_id": "eng-092-nested-deliverable",
+  "status": "ready",
+  "title": "engineering smoke #eng-092-nested-deliverable",
+  "tags": [
+    "smoke",
+    "write",
+    "nested",
+    "json-keys-verified",
+    "engineering",
+    "deterministic"
+  ],
+  "input": {
+    "prompt": "在嵌套目录里创建一份 JSON 交付物 reports/batch-02/inner-092.json，包含 record=RECORD-092 与 batch。"
+  },
+  "fixtures": [
+    {
+      "path": "counts.tsv",
+      "sha256": "e7b974d53b63afc7804b319254f912ca0aea0f735f42c858e95ef3c2885f5218"
+    }
+  ],
+  "runtime": {
+    "allowed_tools": [
+      "write_file"
+    ],
+    "max_steps": 8,
+    "max_new_tokens": 1024,
+    "forbid_network": true
+  },
+  "verification": {
+    "final_nonempty": true,
+    "final_contains": [
+      "RECORD-092"
+    ],
+    "final_regex": [],
+    "expected_files": [
+      {
+        "path": "reports/batch-02/inner-092.json",
+        "must_exist": true,
+        "json_keys": [
+          "record",
+          "batch",
+          "ok"
+        ]
+      }
+    ],
+    "commands": null,
+    "expect_recovery": false
+  },
+  "budgets": {
+    "max_tool_steps": 5
+  },
+  "source": {
+    "generator": "scripts/generate_replay_case_suite.py",
+    "case_index": 92
+  }
+}

@@ -1,0 +1,4 @@
+[
+  "<tool>{\"name\": \"list_files\", \"args\": {\"path\": \".\"}}</tool>",
+  "<final>我列出了工作区，共有 samples 与 artifacts 两类结构。RECORD-006 已完成。</final>"
+]

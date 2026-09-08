@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "case_id": "eng-085-read-then-write",
+  "status": "ready",
+  "title": "engineering smoke #eng-085-read-then-write",
+  "tags": [
+    "smoke",
+    "read",
+    "write",
+    "transform",
+    "engineering",
+    "deterministic"
+  ],
+  "input": {
+    "prompt": "读取 sample.txt，然后把记录 RECORD-085 连同原文写到 builds/transformed-085.txt。"
+  },
+  "fixtures": [
+    {
+      "path": "sample.txt",
+      "sha256": "df6c0364f12db907161c557c906c41e3bd86d97eeb1a78c7ce3adcbf86493b56"
+    }
+  ],
+  "runtime": {
+    "allowed_tools": [
+      "read_file",
+      "write_file"
+    ],
+    "max_steps": 8,
+    "max_new_tokens": 1024,
+    "forbid_network": true
+  },
+  "verification": {
+    "final_nonempty": true,
+    "final_contains": [
+      "RECORD-085"
+    ],
+    "final_regex": [],
+    "expected_files": [
+      {
+        "path": "builds/transformed-085.txt",
+        "must_exist": true
+      }
+    ],
+    "commands": [
+      "python -c \"import sys; sys.exit(0 if 'RECORD-085' in open('builds/transformed-085.txt').read() else 1)\""
+    ],
+    "expect_recovery": false
+  },
+  "budgets": {
+    "max_tool_steps": 5
+  },
+  "source": {
+    "generator": "scripts/generate_replay_case_suite.py",
+    "case_index": 85
+  }
+}

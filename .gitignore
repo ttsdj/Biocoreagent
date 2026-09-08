@@ -7,6 +7,8 @@ __pycache__/
 .test-tmp*/
 .verify*/
 .tmp/
+tmp/
+output/
 .final-*-test-tmp/
 .pico-*-test-tmp/
 .bio-test-tmp/
@@ -41,4 +43,5 @@ results/
 note.txt
 proteomics_fallback_*/
 docs/biocore-v1/
+docs/
 tests/biocore_legacy/

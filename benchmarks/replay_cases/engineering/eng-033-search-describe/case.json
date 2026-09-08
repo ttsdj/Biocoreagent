@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "case_id": "eng-033-search-describe",
+  "status": "ready",
+  "title": "engineering smoke #eng-033-search-describe",
+  "tags": [
+    "smoke",
+    "read-only",
+    "search",
+    "engineering",
+    "deterministic"
+  ],
+  "input": {
+    "prompt": "在 workspace 里搜索字符串 RECORD-033，并告诉我命中了哪个文件。"
+  },
+  "fixtures": [
+    {
+      "path": "notes.md",
+      "sha256": "7a6799e808de5184ac3fd50ea1e9bb9f2807b2d6a77b9cca23bbac512d154994"
+    }
+  ],
+  "runtime": {
+    "allowed_tools": [
+      "search"
+    ],
+    "max_steps": 8,
+    "max_new_tokens": 1024,
+    "forbid_network": true
+  },
+  "verification": {
+    "final_nonempty": true,
+    "final_contains": [
+      "RECORD-033"
+    ],
+    "final_regex": [],
+    "expected_files": [],
+    "commands": null,
+    "expect_recovery": false
+  },
+  "budgets": {
+    "max_tool_steps": 5
+  },
+  "source": {
+    "generator": "scripts/generate_replay_case_suite.py",
+    "case_index": 33
+  }
+}

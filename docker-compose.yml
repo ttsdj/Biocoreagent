@@ -1,6 +1,10 @@
 services:
   memory-postgres:
-    image: postgres:15
+    # pgvector image so the store can run the optional dense ANN upgrade
+    # (initialize() enables the `vector` extension + column + HNSW).  A stock
+    # postgres image still works: the store auto-detects the missing extension
+    # and keeps the JSONB cosine fallback.
+    image: pgvector/pgvector:pg15
     profiles: ["memory"]
     environment:
       POSTGRES_DB: biocoreagent_memory

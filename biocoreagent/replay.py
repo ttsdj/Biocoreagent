@@ -57,6 +57,16 @@ class LocalReplayBioPico(BioPico):
             if NETWORK_COMMAND_RE.search(command):
                 raise ValueError("network and remote commands are forbidden in local replay")
 
+    def _try_csv_export_shortcut(self, user_message):
+        # 确定性回放必须走纯工具循环，不能短路到需要真实后端/真实数据的域捷径。
+        return None
+
+    def _try_bio_shortcut(self, user_message, force=False):
+        return None
+
+    def _try_fallback_analysis(self, user_message, route):
+        return None
+
 
 def load_json(path: str | Path) -> dict[str, Any]:
     return json.loads(Path(path).read_text(encoding="utf-8"))
@@ -404,6 +414,69 @@ def run_suite(
     scorecard = build_scorecard(results, scorecard_path)
     return {
         "suite": str(suite_dir),
+        "results": results,
+        "scorecard": scorecard,
+        "scorecard_path": str(scorecard_path),
+    }
+
+
+def run_suite_deterministic(
+    suite_dir: str | Path,
+    output_root: str | Path,
+) -> dict[str, Any]:
+    """Run every case in a suite, each driven by its OWN fake_outputs.json.
+
+    与 run_suite 的唯一区别：run_suite 让所有 case 共享同一个 model_client（模拟一次
+    长会话里的多次 ask），而 deterministic 套件里每个 case 的模型输出都固化在自己的
+    fake_outputs.json，因此这里为每个 case 单独构建一个 FakeModelClient，保证「这条 case
+    的输出序列」完全由它自己决定——这正是「每条用例都能独立、确定性地跑通」的语义。
+    """
+    suite_dir = Path(suite_dir).resolve()
+    case_files = sorted(suite_dir.glob("*/case.json"))
+    if not case_files:
+        raise ReplayError(f"suite contains no replay cases: {suite_dir}")
+    missing = [
+        str(path.parent / "fake_outputs.json")
+        for path in case_files
+        if not (path.parent / "fake_outputs.json").is_file()
+    ]
+    if missing:
+        raise ReplayError(
+            "deterministic suite requires a fake_outputs.json per case; missing: "
+            + ", ".join(missing)
+        )
+    results = []
+    for case_file in case_files:
+        case_id = case_file.parent.name
+        try:
+            client = fake_model_from_file(case_file.parent / "fake_outputs.json")
+            results.append(run_case(case_file, output_root, model_client=client))
+        except (ReplayError, RuntimeError, ValueError, OSError) as exc:
+            results.append(
+                {
+                    "schema_version": 1,
+                    "replay_id": "",
+                    "case_id": case_id,
+                    "fresh_run_id": "",
+                    "fresh_run_dir": "",
+                    "runtime_identity": {},
+                    "verification": {
+                        "passed": False,
+                        "hard_gates_passed": False,
+                        "score": 0.0,
+                        "tool_steps": 0,
+                        "stop_reason": "replay_error",
+                        "error": str(exc),
+                    },
+                }
+            )
+    scorecard_path = Path(output_root).resolve() / (
+        "suite_scorecard_" + time.strftime("%Y%m%d-%H%M%S") + ".json"
+    )
+    scorecard = build_scorecard(results, scorecard_path)
+    return {
+        "suite": str(suite_dir),
+        "deterministic": True,
         "results": results,
         "scorecard": scorecard,
         "scorecard_path": str(scorecard_path),

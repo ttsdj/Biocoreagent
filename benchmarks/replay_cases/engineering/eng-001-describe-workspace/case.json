@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "case_id": "eng-001-describe-workspace",
+  "status": "ready",
+  "title": "engineering smoke #eng-001-describe-workspace",
+  "tags": [
+    "smoke",
+    "read-only",
+    "list_files",
+    "engineering",
+    "deterministic"
+  ],
+  "input": {
+    "prompt": "列出当前工作区里的所有文件（RECORD-001），然后简短说明你看到了什么。"
+  },
+  "fixtures": [
+    {
+      "path": "data.csv",
+      "sha256": "3cd9076a2dd39c2f3c10dfe720c903d0e42d4ade98c73cf574b5f23915f3b20c"
+    }
+  ],
+  "runtime": {
+    "allowed_tools": [
+      "list_files"
+    ],
+    "max_steps": 8,
+    "max_new_tokens": 1024,
+    "forbid_network": true
+  },
+  "verification": {
+    "final_nonempty": true,
+    "final_contains": null,
+    "final_regex": [],
+    "expected_files": [],
+    "commands": null,
+    "expect_recovery": false
+  },
+  "budgets": {
+    "max_tool_steps": 5
+  },
+  "source": {
+    "generator": "scripts/generate_replay_case_suite.py",
+    "case_index": 1
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "case_id": "eng-048-write-report",
+  "status": "ready",
+  "title": "engineering smoke #eng-048-write-report",
+  "tags": [
+    "smoke",
+    "write",
+    "md",
+    "content-verified",
+    "engineering",
+    "deterministic"
+  ],
+  "input": {
+    "prompt": "根据当前数据生成一份 Markdown 报告到 reports/report-048.md，文件中必须包含 RECORD-048。"
+  },
+  "fixtures": [
+    {
+      "path": "data.csv",
+      "sha256": "c4acce8466a525fd44f1f5fc8842f965723acedd12d0346a121a67db5cb1389f"
+    }
+  ],
+  "runtime": {
+    "allowed_tools": [
+      "write_file"
+    ],
+    "max_steps": 8,
+    "max_new_tokens": 1024,
+    "forbid_network": true
+  },
+  "verification": {
+    "final_nonempty": true,
+    "final_contains": [
+      "RECORD-048",
+      "reports/report-048.md"
+    ],
+    "final_regex": [],
+    "expected_files": [
+      {
+        "path": "reports/report-048.md",
+        "must_exist": true
+      }
+    ],
+    "commands": [
+      "python -c \"import sys; sys.exit(0 if 'RECORD-048' in open('reports/report-048.md').read() else 1)\""
+    ],
+    "expect_recovery": false
+  },
+  "budgets": {
+    "max_tool_steps": 5
+  },
+  "source": {
+    "generator": "scripts/generate_replay_case_suite.py",
+    "case_index": 48
+  }
+}

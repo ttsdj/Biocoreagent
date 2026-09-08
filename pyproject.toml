@@ -39,3 +39,7 @@ include = ["biocoreagent*", "pico*", "corecoder*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+    "slow: 运行耗时较长（如确定性回放全套 100 条）的测试，默认不参与 CI 全量。",
+    "postgres: 需要 Postgres 长期记忆服务的可选集成测试，无 DSN 时按条件跳过。",
+]

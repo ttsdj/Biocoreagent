@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "case_id": "eng-028-search-describe",
+  "status": "ready",
+  "title": "engineering smoke #eng-028-search-describe",
+  "tags": [
+    "smoke",
+    "read-only",
+    "search",
+    "engineering",
+    "deterministic"
+  ],
+  "input": {
+    "prompt": "Search the workspace for string 'RECORD-028' and report which file matches."
+  },
+  "fixtures": [
+    {
+      "path": "notes.md",
+      "sha256": "3231821a18b3d2903f0e1515d34c4243243ef76920c6be1285fcee685852134f"
+    }
+  ],
+  "runtime": {
+    "allowed_tools": [
+      "search"
+    ],
+    "max_steps": 8,
+    "max_new_tokens": 1024,
+    "forbid_network": true
+  },
+  "verification": {
+    "final_nonempty": true,
+    "final_contains": [
+      "RECORD-028"
+    ],
+    "final_regex": [],
+    "expected_files": [],
+    "commands": null,
+    "expect_recovery": false
+  },
+  "budgets": {
+    "max_tool_steps": 5
+  },
+  "source": {
+    "generator": "scripts/generate_replay_case_suite.py",
+    "case_index": 28
+  }
+}

@@ -1,16 +1,30 @@
 import json
+
+import pytest
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+
+# The docs/ directory is gitignored (user's explicit "忽略全部docs" decision), so a
+# fresh clone has no docs.  These tests assert on the resume/ledger content; when that
+# content is absent they must skip cleanly rather than hard-fail the committed suite.
+RESUME_DOC = REPO_ROOT / "docs" / "resume" / "biocoreagent_resume_star.md"
+LEDGER_DOC = REPO_ROOT / "docs" / "claim_evidence_ledger.md"
+
+
+def _skip_if_missing(path: Path) -> None:
+    if not path.is_file():
+        pytest.skip(f"docs/ is gitignored in this checkout; missing: {path}")
 
 
 def test_resume_metrics_artifact_matches_documented_claims():
     metrics_path = REPO_ROOT / "artifacts" / "resume-metrics-v1.json"
     harness_path = REPO_ROOT / "artifacts" / "harness-regression-v2.json"
-    resume_path = REPO_ROOT / "docs" / "resume" / "biocoreagent_resume_star.md"
+    resume_path = RESUME_DOC
     memory_scorecard_path = REPO_ROOT / "artifacts" / "memory-recall-synthetic-v1.json"
     graph_scorecard_path = REPO_ROOT / "artifacts" / "research-graph-curated-v1.json"
 
+    _skip_if_missing(resume_path)
     assert metrics_path.is_file()
     assert harness_path.is_file()
     assert resume_path.is_file()
@@ -74,14 +88,58 @@ def test_resume_metrics_artifact_matches_documented_claims():
 
 
 def test_resume_document_states_material_claim_boundaries():
-    resume = (
-        REPO_ROOT
-        / "docs"
-        / "resume"
-        / "biocoreagent_resume_star.md"
-    ).read_text(encoding="utf-8")
+    _skip_if_missing(RESUME_DOC)
+    resume = RESUME_DOC.read_text(encoding="utf-8")
 
     assert "当前 Postgres 实现将 embedding 保存为 JSONB" in resume
     assert "当前 100%/1.000 来自 200 条冻结合成工程资格集" in resume
     assert "官方外部 LLM judge 未运行" in resume
     assert "44% 是 BioCoreAgent 初版" in resume
+
+
+def test_claim_evidence_ledger_matches_artifacts():
+    # 权威 ledger 作为全仓库唯一真值来源,必须与 artifacts 关键数字一致,且不残留旧口径。
+    ledger_path = LEDGER_DOC
+    _skip_if_missing(ledger_path)
+    ledger = ledger_path.read_text(encoding="utf-8")
+
+    # 真值标记必须出现在权威表里
+    for token in (
+        "26,928",
+        "1,795",
+        "92.95%",
+        "95.23%",
+        "14/14",
+        "100%",
+        "1.000",
+        "99.4%",
+        "0.67",
+        "22/50",
+        "38/50",
+        "76%",
+        "32 个百分点",
+        "100/100",
+        "8 个冻结策划场景",
+        "验收门槛",
+        "不是实测结果",
+    ):
+        assert token in ledger, f"claim_evidence_ledger.md 缺少真值标记: {token}"
+
+    # 旧口径(91.42% / 提升20% / 把 99.4%当实测)不得作为独立真值残留
+    assert "91.42%" not in ledger
+    assert "提升 20%" not in ledger
+
+    # 双向校验:artifact 里的标志性数字必须与权威表口径一致
+    metrics = json.loads(
+        (REPO_ROOT / "artifacts" / "resume-metrics-v1.json").read_text(encoding="utf-8")
+    )
+    assert metrics["context"]["average_compression_ratio"] == 0.929541  # 92.95%
+    assert metrics["bixbench_verified50"]["initial"]["passed"] == 22
+    assert metrics["bixbench_verified50"]["best"]["passed"] == 38
+
+    memory_scorecard = json.loads(
+        (REPO_ROOT / "artifacts" / "memory-recall-synthetic-v1.json").read_text(encoding="utf-8")
+    )
+    assert memory_scorecard["query_count"] == 200
+    assert memory_scorecard["hit_rate_at_10"] >= 0.994
+    assert memory_scorecard["mrr_at_10"] >= 0.67

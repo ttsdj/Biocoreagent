@@ -1,0 +1,4 @@
+[
+  "<tool name=\"write_file\" path=\"analysis/derived-075.csv\"><content>record,derived\nRECORD-075,75\n</content></tool>",
+  "<final>已归纳出汇总表 analysis/derived-075.csv，第 1 行为 RECORD-075。</final>"
+]

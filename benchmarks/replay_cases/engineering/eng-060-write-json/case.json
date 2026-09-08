@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "case_id": "eng-060-write-json",
+  "status": "ready",
+  "title": "engineering smoke #eng-060-write-json",
+  "tags": [
+    "smoke",
+    "write",
+    "json",
+    "json-keys-verified",
+    "engineering",
+    "deterministic"
+  ],
+  "input": {
+    "prompt": "把本次分析结果写成 JSON 交付物 artifacts/summary-060.json，包含 case_id、value、status 与 record=RECORD-060。"
+  },
+  "fixtures": [
+    {
+      "path": "counts.tsv",
+      "sha256": "08a8cf490c10d02feeb51fcfa459828a3bfe0c2c157eb738cf22a82600723770"
+    }
+  ],
+  "runtime": {
+    "allowed_tools": [
+      "write_file"
+    ],
+    "max_steps": 8,
+    "max_new_tokens": 1024,
+    "forbid_network": true
+  },
+  "verification": {
+    "final_nonempty": true,
+    "final_contains": [
+      "RECORD-060",
+      "eng-060"
+    ],
+    "final_regex": [],
+    "expected_files": [
+      {
+        "path": "artifacts/summary-060.json",
+        "must_exist": true,
+        "json_keys": [
+          "case_id",
+          "value",
+          "status",
+          "record"
+        ]
+      }
+    ],
+    "commands": null,
+    "expect_recovery": false
+  },
+  "budgets": {
+    "max_tool_steps": 5
+  },
+  "source": {
+    "generator": "scripts/generate_replay_case_suite.py",
+    "case_index": 60
+  }
+}

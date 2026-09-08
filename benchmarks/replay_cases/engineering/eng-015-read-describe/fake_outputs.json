@@ -1,0 +1,4 @@
+[
+  "<tool>{\"name\": \"read_file\", \"args\": {\"path\": \"sample.txt\", \"start\": 1, \"end\": 20}}</tool>",
+  "<final>已读取 sample.txt，关键记录编号为 RECORD-015。</final>"
+]

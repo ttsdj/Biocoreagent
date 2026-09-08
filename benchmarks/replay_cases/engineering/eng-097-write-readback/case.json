@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "case_id": "eng-097-write-readback",
+  "status": "ready",
+  "title": "engineering smoke #eng-097-write-readback",
+  "tags": [
+    "smoke",
+    "write",
+    "read-back",
+    "content-verified",
+    "engineering",
+    "deterministic"
+  ],
+  "input": {
+    "prompt": "把记录 RECORD-097 写入 notes/scratch-097.txt，然后读回确认内容正确。"
+  },
+  "fixtures": [
+    {
+      "path": "data.csv",
+      "sha256": "e0dacbf267f87819191e90a908b8f957d95799620055b4cb2f87112bf7652862"
+    }
+  ],
+  "runtime": {
+    "allowed_tools": [
+      "write_file",
+      "read_file"
+    ],
+    "max_steps": 8,
+    "max_new_tokens": 1024,
+    "forbid_network": true
+  },
+  "verification": {
+    "final_nonempty": true,
+    "final_contains": [
+      "RECORD-097"
+    ],
+    "final_regex": [],
+    "expected_files": [
+      {
+        "path": "notes/scratch-097.txt",
+        "must_exist": true
+      }
+    ],
+    "commands": [
+      "python -c \"import sys; sys.exit(0 if 'RECORD-097' in open('notes/scratch-097.txt').read() else 1)\""
+    ],
+    "expect_recovery": false
+  },
+  "budgets": {
+    "max_tool_steps": 5
+  },
+  "source": {
+    "generator": "scripts/generate_replay_case_suite.py",
+    "case_index": 97
+  }
+}

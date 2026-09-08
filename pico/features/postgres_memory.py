@@ -120,6 +120,10 @@ class PostgresLongTermMemoryStore:
         self.dsn = str(dsn)
         self.embedding_provider = embedding_provider or embedding_provider_from_environment()
         self._research_graph = None
+        # Whether the backing Postgres actually ships the `vector` extension.
+        # Detected idempotently in initialize(); when absent the store keeps the
+        # JSONB cosine fallback exactly as before.
+        self.pgvector_enabled = False
 
     @classmethod
     def from_environment(cls):
@@ -177,6 +181,25 @@ class PostgresLongTermMemoryStore:
             cursor.execute(
                 "CREATE INDEX IF NOT EXISTS idx_ltm_evidence_source ON long_term_memory_evidence(source_session_id, start_message_index)"
             )
+            # Optional pgvector (dense) upgrade.  Only runs when the image ships
+            # the `vector` extension (e.g. pgvector/pgvector:pg15); a stock
+            # postgres:15 raises here and the store transparently falls back to
+            # the JSONB cosine path.  Every step is idempotent, so repeated
+            # initialize() calls never fail.
+            try:
+                cursor.execute("CREATE EXTENSION IF NOT EXISTS vector")
+                cursor.execute(
+                    "ALTER TABLE long_term_memories ADD COLUMN IF NOT EXISTS embedding vector(256)"
+                )
+                cursor.execute(
+                    "CREATE INDEX IF NOT EXISTS idx_ltm_embedding_hnsw "
+                    "ON long_term_memories USING hnsw (embedding vector_cosine_ops)"
+                )
+                self.pgvector_enabled = True
+            except Exception:
+                # Stock Postgres without pgvector (or an in-progress migration):
+                # keep the JSONB/RRF behaviour, never wedge startup on a DENY.
+                self.pgvector_enabled = False
         return self
 
     def upsert(self, memory):
@@ -188,41 +211,56 @@ class PostgresLongTermMemoryStore:
         now = datetime.now(timezone.utc).isoformat()
         embedding = self.embedding_provider.embed(statement)
         evidence = dict(memory["evidence"])
+        # JSONB is always written so the store stays readable even when pgvector
+        # is not installed; the optional vector column is written on top of it
+        # only when the migration succeeded (pgvector_enabled).
+        insert_cols = [
+            "memory_id", "user_scope", "project_scope", "memory_type", "statement",
+            "tags_json", "embedding_json", "embedding_model", "reliability", "state",
+            "supersedes", "distiller_version", "created_at", "updated_at",
+        ]
+        insert_placeholders = [
+            "%s", "%s", "%s", "%s", "%s", "%s::jsonb", "%s::jsonb", "%s", "%s",
+            "%s", "%s", "%s", "%s", "%s",
+        ]
+        params = [
+            memory_id,
+            str(memory.get("user_scope", "")),
+            str(memory.get("project_scope", "")),
+            str(memory.get("memory_type", "fact")),
+            statement,
+            json.dumps(memory.get("tags", []), ensure_ascii=False),
+            json.dumps(embedding),
+            self.embedding_provider.name,
+            float(memory.get("reliability", 0.65)),
+            str(memory.get("state", "active")),
+            str(memory.get("supersedes", "")),
+            str(memory.get("distiller_version", "rules_v1")),
+            str(memory.get("created_at", now)),
+            now,
+        ]
+        update_set = [
+            "statement = EXCLUDED.statement",
+            "tags_json = EXCLUDED.tags_json",
+            "embedding_json = EXCLUDED.embedding_json",
+            "embedding_model = EXCLUDED.embedding_model",
+            "reliability = EXCLUDED.reliability",
+            "state = EXCLUDED.state",
+            "supersedes = EXCLUDED.supersedes",
+            "updated_at = EXCLUDED.updated_at",
+        ]
+        if self.pgvector_enabled:
+            insert_cols.append("embedding")
+            insert_placeholders.append("%s::vector")
+            params.append("[" + ",".join(f"{float(value):.6f}" for value in embedding) + "]")
+            update_set.append("embedding = EXCLUDED.embedding")
+        sql = (
+            "INSERT INTO long_term_memories (" + ", ".join(insert_cols) + ") VALUES ("
+            + ", ".join(insert_placeholders) + ") ON CONFLICT(memory_id) DO UPDATE SET "
+            + ", ".join(update_set)
+        )
         with self._connect() as connection, connection.cursor() as cursor:
-            cursor.execute(
-                """
-                INSERT INTO long_term_memories (
-                    memory_id, user_scope, project_scope, memory_type, statement,
-                    tags_json, embedding_json, embedding_model, reliability, state,
-                    supersedes, distiller_version, created_at, updated_at
-                ) VALUES (%s, %s, %s, %s, %s, %s::jsonb, %s::jsonb, %s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT(memory_id) DO UPDATE SET
-                    statement = EXCLUDED.statement,
-                    tags_json = EXCLUDED.tags_json,
-                    embedding_json = EXCLUDED.embedding_json,
-                    embedding_model = EXCLUDED.embedding_model,
-                    reliability = EXCLUDED.reliability,
-                    state = EXCLUDED.state,
-                    supersedes = EXCLUDED.supersedes,
-                    updated_at = EXCLUDED.updated_at
-                """,
-                (
-                    memory_id,
-                    str(memory.get("user_scope", "")),
-                    str(memory.get("project_scope", "")),
-                    str(memory.get("memory_type", "fact")),
-                    statement,
-                    json.dumps(memory.get("tags", []), ensure_ascii=False),
-                    json.dumps(embedding),
-                    self.embedding_provider.name,
-                    float(memory.get("reliability", 0.65)),
-                    str(memory.get("state", "active")),
-                    str(memory.get("supersedes", "")),
-                    str(memory.get("distiller_version", "rules_v1")),
-                    str(memory.get("created_at", now)),
-                    now,
-                ),
-            )
+            cursor.execute(sql, tuple(params))
             cursor.execute(
                 """
                 INSERT INTO long_term_memory_evidence (
@@ -289,31 +327,55 @@ class PostgresLongTermMemoryStore:
             values.append(str(project_scope))
         else:
             where.append("memory.project_scope = ''")
-        with self._connect() as connection, connection.cursor() as cursor:
-            cursor.execute(
-                """
-                SELECT memory.memory_id, memory.statement, memory.tags_json,
-                       memory.embedding_json, memory.embedding_model,
-                       memory.reliability, memory.memory_type,
-                       evidence.source_uri, evidence.source_sha256,
-                       evidence.source_session_id, evidence.start_message_index,
-                       evidence.end_message_index
-                FROM long_term_memories AS memory
-                JOIN long_term_memory_evidence AS evidence ON evidence.memory_id = memory.memory_id
-                WHERE """ + " AND ".join(where),
-                tuple(values),
+        dense_query = self.embedding_provider.embed(query)
+        # pgvector path: ask the DB for the native cosine distance on the SAME
+        # scope-filtered candidate set, then RRF-fuse with BM25 (still computed
+        # in Python over the filtered candidates).  When pgvector is not
+        # installed the store keeps the JSONB cosine fallback, unchanged.
+        if self.pgvector_enabled:
+            select_clause = (
+                "SELECT memory.memory_id, memory.statement, memory.tags_json, "
+                "       memory.embedding_json, memory.embedding_model, "
+                "       memory.reliability, memory.memory_type, "
+                "       evidence.source_uri, evidence.source_sha256, "
+                "       evidence.source_session_id, evidence.start_message_index, "
+                "       evidence.end_message_index, "
+                "       memory.embedding <=> %s::vector AS dense_dist "
+                "FROM long_term_memories AS memory "
+                "JOIN long_term_memory_evidence AS evidence ON evidence.memory_id = memory.memory_id "
+                "WHERE " + " AND ".join(where)
             )
+            bind_params = ("[" + ",".join(f"{float(value):.6f}" for value in dense_query) + "]",) + tuple(values)
+        else:
+            select_clause = (
+                "SELECT memory.memory_id, memory.statement, memory.tags_json, "
+                "       memory.embedding_json, memory.embedding_model, "
+                "       memory.reliability, memory.memory_type, "
+                "       evidence.source_uri, evidence.source_sha256, "
+                "       evidence.source_session_id, evidence.start_message_index, "
+                "       evidence.end_message_index "
+                "FROM long_term_memories AS memory "
+                "JOIN long_term_memory_evidence AS evidence ON evidence.memory_id = memory.memory_id "
+                "WHERE " + " AND ".join(where)
+            )
+            bind_params = tuple(values)
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute(select_clause, bind_params)
             columns = [item.name for item in cursor.description]
             rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
         documents = [_tokens(row["statement"] + " " + " ".join(row["tags_json"] or [])) for row in rows]
         bm25_scores = _bm25(query_tokens, documents)
-        dense_query = self.embedding_provider.embed(query)
-        dense_scores = [
-            _cosine(dense_query, row["embedding_json"] or [])
-            if row["embedding_model"] == self.embedding_provider.name
-            else 0.0
-            for row in rows
-        ]
+        dense_scores = []
+        for row in rows:
+            if row["embedding_model"] != self.embedding_provider.name:
+                dense_scores.append(0.0)
+            elif self.pgvector_enabled:
+                # `<=>` is cosine distance; keep the gate, only reuse the vector
+                # column (dense_dist) when it is actually populated.
+                distance = row.get("dense_dist")
+                dense_scores.append(max(0.0, 1.0 - float(distance)) if distance is not None else 0.0)
+            else:
+                dense_scores.append(_cosine(dense_query, row["embedding_json"] or []))
         bm25_order = sorted(range(len(rows)), key=lambda index: bm25_scores[index], reverse=True)
         dense_order = sorted(range(len(rows)), key=lambda index: dense_scores[index], reverse=True)
         bm25_ranks = {index: rank + 1 for rank, index in enumerate(bm25_order) if bm25_scores[index] > 0}

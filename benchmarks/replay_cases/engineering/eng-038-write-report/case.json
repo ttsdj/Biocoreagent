@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "case_id": "eng-038-write-report",
+  "status": "ready",
+  "title": "engineering smoke #eng-038-write-report",
+  "tags": [
+    "smoke",
+    "write",
+    "md",
+    "content-verified",
+    "engineering",
+    "deterministic"
+  ],
+  "input": {
+    "prompt": "根据当前数据生成一份 Markdown 报告到 reports/report-038.md，文件中必须包含 RECORD-038。"
+  },
+  "fixtures": [
+    {
+      "path": "data.csv",
+      "sha256": "fe90d0be3bce4500f36ed42ae32ea28a46c715622a766583e14a837b8c11a914"
+    }
+  ],
+  "runtime": {
+    "allowed_tools": [
+      "write_file"
+    ],
+    "max_steps": 8,
+    "max_new_tokens": 1024,
+    "forbid_network": true
+  },
+  "verification": {
+    "final_nonempty": true,
+    "final_contains": [
+      "RECORD-038",
+      "reports/report-038.md"
+    ],
+    "final_regex": [],
+    "expected_files": [
+      {
+        "path": "reports/report-038.md",
+        "must_exist": true
+      }
+    ],
+    "commands": [
+      "python -c \"import sys; sys.exit(0 if 'RECORD-038' in open('reports/report-038.md').read() else 1)\""
+    ],
+    "expect_recovery": false
+  },
+  "budgets": {
+    "max_tool_steps": 5
+  },
+  "source": {
+    "generator": "scripts/generate_replay_case_suite.py",
+    "case_index": 38
+  }
+}

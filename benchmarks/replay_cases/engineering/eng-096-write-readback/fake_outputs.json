@@ -1,0 +1,5 @@
+[
+  "<tool name=\"write_file\" path=\"notes/scratch-096.txt\"><content>Round-trip RECORD-096\nalpha\nbeta\n</content></tool>",
+  "<tool>{\"name\": \"read_file\", \"args\": {\"path\": \"notes/scratch-096.txt\", \"start\": 1, \"end\": 20}}</tool>",
+  "<final>已写入 notes/scratch-096.txt 并成功读回，记录 RECORD-096 校验通过。</final>"
+]

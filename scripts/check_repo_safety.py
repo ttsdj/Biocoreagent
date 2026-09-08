@@ -17,6 +17,8 @@ BLOCKED_PARTS = {
     ".biocoreagent",
     ".pytest_cache",
     ".tmp",
+    "tmp",
+    "output",
     "dist",
     "build",
     "__pycache__",

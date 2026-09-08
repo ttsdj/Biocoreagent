@@ -1,0 +1,4 @@
+[
+  "<tool name=\"write_file\" path=\"reports/batch-00/inner-095.json\"><content>{\n  \"record\": \"RECORD-095\",\n  \"batch\": 0,\n  \"ok\": true\n}\n</content></tool>",
+  "<final>已写入嵌套交付物 reports/batch-00/inner-095.json（record=RECORD-095）。</final>"
+]

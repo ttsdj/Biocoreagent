@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "case_id": "eng-100-write-readback",
+  "status": "ready",
+  "title": "engineering smoke #eng-100-write-readback",
+  "tags": [
+    "smoke",
+    "write",
+    "read-back",
+    "content-verified",
+    "engineering",
+    "deterministic"
+  ],
+  "input": {
+    "prompt": "把记录 RECORD-100 写入 notes/scratch-100.txt，然后读回确认内容正确。"
+  },
+  "fixtures": [
+    {
+      "path": "data.csv",
+      "sha256": "e15d4584b826cc6c71ae9e698d8f0964c52c6835b0cd5121323edcaa24e5ddf5"
+    }
+  ],
+  "runtime": {
+    "allowed_tools": [
+      "write_file",
+      "read_file"
+    ],
+    "max_steps": 8,
+    "max_new_tokens": 1024,
+    "forbid_network": true
+  },
+  "verification": {
+    "final_nonempty": true,
+    "final_contains": [
+      "RECORD-100"
+    ],
+    "final_regex": [],
+    "expected_files": [
+      {
+        "path": "notes/scratch-100.txt",
+        "must_exist": true
+      }
+    ],
+    "commands": [
+      "python -c \"import sys; sys.exit(0 if 'RECORD-100' in open('notes/scratch-100.txt').read() else 1)\""
+    ],
+    "expect_recovery": false
+  },
+  "budgets": {
+    "max_tool_steps": 5
+  },
+  "source": {
+    "generator": "scripts/generate_replay_case_suite.py",
+    "case_index": 100
+  }
+}

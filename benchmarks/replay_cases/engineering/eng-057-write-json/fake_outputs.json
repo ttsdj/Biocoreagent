@@ -1,0 +1,4 @@
+[
+  "<tool name=\"write_file\" path=\"artifacts/summary-057.json\"><content>{\n  \"case_id\": \"eng-057\",\n  \"value\": 57,\n  \"status\": \"ok\",\n  \"record\": \"RECORD-057\"\n}\n</content></tool>",
+  "<final>已生成交付物 artifacts/summary-057.json：case_id=eng-057, record=RECORD-057。</final>"
+]

@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "case_id": "eng-037-write-report",
+  "status": "ready",
+  "title": "engineering smoke #eng-037-write-report",
+  "tags": [
+    "smoke",
+    "write",
+    "md",
+    "content-verified",
+    "engineering",
+    "deterministic"
+  ],
+  "input": {
+    "prompt": "根据当前数据生成一份 Markdown 报告到 reports/report-037.md，文件中必须包含 RECORD-037。"
+  },
+  "fixtures": [
+    {
+      "path": "data.csv",
+      "sha256": "377e6dc9701294cedb32104e6271a2dca7a8c8424c8dd00a67a9cf51d520fa44"
+    }
+  ],
+  "runtime": {
+    "allowed_tools": [
+      "write_file"
+    ],
+    "max_steps": 8,
+    "max_new_tokens": 1024,
+    "forbid_network": true
+  },
+  "verification": {
+    "final_nonempty": true,
+    "final_contains": [
+      "RECORD-037",
+      "reports/report-037.md"
+    ],
+    "final_regex": [],
+    "expected_files": [
+      {
+        "path": "reports/report-037.md",
+        "must_exist": true
+      }
+    ],
+    "commands": [
+      "python -c \"import sys; sys.exit(0 if 'RECORD-037' in open('reports/report-037.md').read() else 1)\""
+    ],
+    "expect_recovery": false
+  },
+  "budgets": {
+    "max_tool_steps": 5
+  },
+  "source": {
+    "generator": "scripts/generate_replay_case_suite.py",
+    "case_index": 37
+  }
+}

@@ -25,6 +25,7 @@ from .replay import (
     materialize_source,
     run_case,
     run_suite,
+    run_suite_deterministic,
     source_versions,
     validate_trace,
 )
@@ -58,6 +59,11 @@ def build_parser() -> argparse.ArgumentParser:
         default=os.environ.get("BIOCOREAGENT_REPLAY_ROOT", ".biocoreagent/replay_runs"),
     )
     run.add_argument("--fake-output-file")
+    run.add_argument(
+        "--fake-per-case",
+        action="store_true",
+        help="Run a directory of cases, each driven by its own fake_outputs.json (deterministic suite).",
+    )
     run.add_argument("--provider")
     run.add_argument("--model")
     run.add_argument("--base-url")
@@ -118,7 +124,15 @@ def main(argv=None) -> int:
             )
             candidate = Path(args.case).resolve()
             if candidate.is_dir() and not (candidate / "case.json").is_file():
-                result = run_suite(candidate, args.output_root, model_client=model_client)
+                suite_cases = sorted(candidate.glob("*/case.json"))
+                deterministic = bool(suite_cases) and all(
+                    (case_file.parent / "fake_outputs.json").is_file()
+                    for case_file in suite_cases
+                )
+                if args.fake_per_case or deterministic:
+                    result = run_suite_deterministic(candidate, args.output_root)
+                else:
+                    result = run_suite(candidate, args.output_root, model_client=model_client)
                 passed = not result["scorecard"]["summary"]["failed"]
             else:
                 result = run_case(args.case, args.output_root, model_client=model_client)

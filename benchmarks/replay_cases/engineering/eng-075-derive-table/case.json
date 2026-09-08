@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "case_id": "eng-075-derive-table",
+  "status": "ready",
+  "title": "engineering smoke #eng-075-derive-table",
+  "tags": [
+    "smoke",
+    "write",
+    "csv",
+    "derived",
+    "engineering",
+    "deterministic"
+  ],
+  "input": {
+    "prompt": "阅读 fixture 后，把关键记录归纳成一张 CSV 汇总表 analysis/derived-075.csv，含 record 与 derived 列。"
+  },
+  "fixtures": [
+    {
+      "path": "sample_sheet.tsv",
+      "sha256": "1ba59723cef1a0f099b86ca96901803c0625521c7b9a6ca8df72afe02a9d083d"
+    }
+  ],
+  "runtime": {
+    "allowed_tools": [
+      "write_file"
+    ],
+    "max_steps": 8,
+    "max_new_tokens": 1024,
+    "forbid_network": true
+  },
+  "verification": {
+    "final_nonempty": true,
+    "final_contains": [
+      "RECORD-075"
+    ],
+    "final_regex": [],
+    "expected_files": [
+      {
+        "path": "analysis/derived-075.csv",
+        "must_exist": true
+      }
+    ],
+    "commands": [
+      "python -c \"import sys; sys.exit(0 if 'RECORD-075' in open('analysis/derived-075.csv').read() else 1)\""
+    ],
+    "expect_recovery": false
+  },
+  "budgets": {
+    "max_tool_steps": 5
+  },
+  "source": {
+    "generator": "scripts/generate_replay_case_suite.py",
+    "case_index": 75
+  }
+}

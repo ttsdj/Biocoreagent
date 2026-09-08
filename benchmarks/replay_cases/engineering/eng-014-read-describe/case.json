@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "case_id": "eng-014-read-describe",
+  "status": "ready",
+  "title": "engineering smoke #eng-014-read-describe",
+  "tags": [
+    "smoke",
+    "read-only",
+    "read_file",
+    "engineering",
+    "deterministic"
+  ],
+  "input": {
+    "prompt": "Read notes.md and state the key record marker (RECORD-014)."
+  },
+  "fixtures": [
+    {
+      "path": "notes.md",
+      "sha256": "e48a2c4d7d8eefa44289b8d9d55bcb9bcedb589529efba4f9c92d9bc9ea22a76"
+    }
+  ],
+  "runtime": {
+    "allowed_tools": [
+      "read_file"
+    ],
+    "max_steps": 8,
+    "max_new_tokens": 1024,
+    "forbid_network": true
+  },
+  "verification": {
+    "final_nonempty": true,
+    "final_contains": [
+      "RECORD-014"
+    ],
+    "final_regex": [],
+    "expected_files": [],
+    "commands": null,
+    "expect_recovery": false
+  },
+  "budgets": {
+    "max_tool_steps": 5
+  },
+  "source": {
+    "generator": "scripts/generate_replay_case_suite.py",
+    "case_index": 14
+  }
+}

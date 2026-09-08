@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "case_id": "eng-086-read-then-write",
+  "status": "ready",
+  "title": "engineering smoke #eng-086-read-then-write",
+  "tags": [
+    "smoke",
+    "read",
+    "write",
+    "transform",
+    "engineering",
+    "deterministic"
+  ],
+  "input": {
+    "prompt": "读取 sample.txt，然后把记录 RECORD-086 连同原文写到 builds/transformed-086.txt。"
+  },
+  "fixtures": [
+    {
+      "path": "sample.txt",
+      "sha256": "09f671525a63d4817a61089f6e4c3586ec81f95ca61bcc445c460ce05272fd3a"
+    }
+  ],
+  "runtime": {
+    "allowed_tools": [
+      "read_file",
+      "write_file"
+    ],
+    "max_steps": 8,
+    "max_new_tokens": 1024,
+    "forbid_network": true
+  },
+  "verification": {
+    "final_nonempty": true,
+    "final_contains": [
+      "RECORD-086"
+    ],
+    "final_regex": [],
+    "expected_files": [
+      {
+        "path": "builds/transformed-086.txt",
+        "must_exist": true
+      }
+    ],
+    "commands": [
+      "python -c \"import sys; sys.exit(0 if 'RECORD-086' in open('builds/transformed-086.txt').read() else 1)\""
+    ],
+    "expect_recovery": false
+  },
+  "budgets": {
+    "max_tool_steps": 5
+  },
+  "source": {
+    "generator": "scripts/generate_replay_case_suite.py",
+    "case_index": 86
+  }
+}

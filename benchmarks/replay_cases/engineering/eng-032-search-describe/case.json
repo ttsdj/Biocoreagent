@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "case_id": "eng-032-search-describe",
+  "status": "ready",
+  "title": "engineering smoke #eng-032-search-describe",
+  "tags": [
+    "smoke",
+    "read-only",
+    "search",
+    "engineering",
+    "deterministic"
+  ],
+  "input": {
+    "prompt": "Search the workspace for string 'RECORD-032' and report which file matches."
+  },
+  "fixtures": [
+    {
+      "path": "notes.md",
+      "sha256": "b51548d3284f25da6054ff59e34013b64c0aa64ebd81a0b2c2c5ecdcfc258725"
+    }
+  ],
+  "runtime": {
+    "allowed_tools": [
+      "search"
+    ],
+    "max_steps": 8,
+    "max_new_tokens": 1024,
+    "forbid_network": true
+  },
+  "verification": {
+    "final_nonempty": true,
+    "final_contains": [
+      "RECORD-032"
+    ],
+    "final_regex": [],
+    "expected_files": [],
+    "commands": null,
+    "expect_recovery": false
+  },
+  "budgets": {
+    "max_tool_steps": 5
+  },
+  "source": {
+    "generator": "scripts/generate_replay_case_suite.py",
+    "case_index": 32
+  }
+}

@@ -1,0 +1,5 @@
+[
+  "<tool>{\"name\": \"read_file\", \"args\": {\"path\": \"sample.txt\", \"start\": 1, \"end\": 20}}</tool>",
+  "<tool name=\"write_file\" path=\"builds/transformed-090.txt\"><content>RECORD-090\nSample RECORD-090\nalpha\nbeta\ngamma\n</content></tool>",
+  "<final>已读取 sample.txt 并落地转换结果 builds/transformed-090.txt，记录 RECORD-090。</final>"
+]
