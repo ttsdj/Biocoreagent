@@ -7,23 +7,23 @@ services:
     image: pgvector/pgvector:pg15
     profiles: ["memory"]
     environment:
-      POSTGRES_DB: biocoreagent_memory
-      POSTGRES_USER: biocoreagent
+      POSTGRES_DB: scicore_bio_memory
+      POSTGRES_USER: scicore.bio
       # Development-only default. Production must supply an external secret.
-      POSTGRES_PASSWORD: biocoreagent_dev_only
+      POSTGRES_PASSWORD: scicore_bio_dev_only
     ports:
       - "127.0.0.1:54329:5432"
     volumes:
-      - biocoreagent-memory-postgres:/var/lib/postgresql/data
+      - scicore.bio-memory-postgres:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U biocoreagent -d biocoreagent_memory"]
+      test: ["CMD-SHELL", "pg_isready -U scicore.bio -d scicore_bio_memory"]
       interval: 3s
       timeout: 3s
       retries: 20
 
-  biocoreagent-v2:
+  scicore:
     build: .
-    image: biocoreagent-v2:local
+    image: scicore:local
     volumes:
       - ./:/app
       - ./workspace:/workspace
@@ -31,4 +31,4 @@ services:
     command: ["--help"]
 
 volumes:
-  biocoreagent-memory-postgres:
+  scicore.bio-memory-postgres:

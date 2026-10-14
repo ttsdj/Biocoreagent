@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from biocoreagent.replay import (
+from scicore.bio.replay import (
     ReplayError,
     build_scorecard,
     explain_artifact,
@@ -13,19 +13,19 @@ from biocoreagent.replay import (
     run_case,
     validate_trace,
 )
-from biocoreagent.runtime import BioPico
-from pico.providers.clients import FakeModelClient
-from pico.run_store import RunStore
-from pico.session_store import SessionStore
-from pico.workspace import WorkspaceContext
+from scicore.bio.runtime import BioRuntime
+from scicore.kernel.providers.clients import FakeModelClient
+from scicore.kernel.run_store import RunStore
+from scicore.kernel.session_store import SessionStore
+from scicore.kernel.workspace import WorkspaceContext
 
 
-def build_agent(root: Path, outputs: list[str]) -> BioPico:
-    return BioPico(
+def build_agent(root: Path, outputs: list[str]) -> BioRuntime:
+    return BioRuntime(
         model_client=FakeModelClient(outputs),
         workspace=WorkspaceContext.build(root, repo_root_override=root),
-        session_store=SessionStore(root / ".biocoreagent" / "sessions"),
-        run_store=RunStore(root / ".biocoreagent" / "runs"),
+        session_store=SessionStore(root / ".scicore" / "sessions"),
+        run_store=RunStore(root / ".scicore" / "runs"),
         approval_policy="auto",
         role="executor",
         allow_orchestration=False,
@@ -62,7 +62,7 @@ def test_source_snapshot_and_deliverable_survive_later_file_change(tmp_path):
         if row["path"] == "analysis.py" and row["version_role"] == "tool_output"
     )
     object_digest = old_version["object_id"].split(":", 1)[1]
-    object_path = tmp_path / ".biocoreagent" / "objects" / "sha256" / object_digest[:2] / object_digest
+    object_path = tmp_path / ".scicore" / "objects" / "sha256" / object_digest[:2] / object_digest
     assert object_path.read_text(encoding="utf-8") == "print('v1')\n"
 
     (tmp_path / "analysis.py").write_text("print('v2')\n", encoding="utf-8")

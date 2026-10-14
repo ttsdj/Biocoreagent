@@ -1,8 +1,8 @@
 import time
 
-from pico.features.local_working_memory import LocalWorkingMemoryStore
-from pico.memory_pipeline import EvidenceDistiller, MemoryPipeline
-from pico.session_store import SessionStore
+from scicore.kernel.features.local_working_memory import LocalWorkingMemoryStore
+from scicore.kernel.memory_pipeline import EvidenceDistiller, MemoryPipeline
+from scicore.kernel.session_store import SessionStore
 
 
 class _CaptureBackend:
@@ -121,9 +121,9 @@ def test_distillation_identity_deduplicates_chunk_boundary_changes():
 
 
 def test_memory_source_cli_returns_original_messages(tmp_path, capsys):
-    from biocoreagent.cli import main
+    from scicore.bio.cli import main
 
-    store = SessionStore(tmp_path / ".biocoreagent" / "sessions")
+    store = SessionStore(tmp_path / ".scicore" / "sessions")
     store.save(
         {
             "id": "source-cli-session",
@@ -139,7 +139,7 @@ def test_memory_source_cli_returns_original_messages(tmp_path, capsys):
 
 
 def test_local_working_memory_keeps_user_and_project_markdown_mirrors(tmp_path):
-    store = LocalWorkingMemoryStore(tmp_path / ".biocoreagent" / "memory")
+    store = LocalWorkingMemoryStore(tmp_path / ".scicore" / "memory")
     store.upsert(
         {
             "memory_type": "user_preference",
@@ -162,8 +162,8 @@ def test_local_working_memory_keeps_user_and_project_markdown_mirrors(tmp_path):
     )
 
     assert store.retrieve("Chinese reports", user_scope="user-a", project_scope="project-a")
-    assert (tmp_path / ".biocoreagent" / "memory" / "user" / "user-a.md").exists()
-    assert (tmp_path / ".biocoreagent" / "memory" / "project" / "project-a.md").exists()
+    assert (tmp_path / ".scicore" / "memory" / "user" / "user-a.md").exists()
+    assert (tmp_path / ".scicore" / "memory" / "project" / "project-a.md").exists()
 
 
 def test_memory_outbox_can_drain_in_background_without_blocking_delivery(tmp_path):

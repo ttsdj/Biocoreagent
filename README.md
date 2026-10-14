@@ -4,7 +4,7 @@
 
 > 项目状态：科研工程原型。仓库已经实现并测试了多智能体编排、证据追踪、回放评测、上下文治理和三层记忆等核心链路；它仍需要真实用户数据验证、生产级安全加固和长期运行观测，不应被描述为“已经替代科研人员的全自动科学家”。
 
-仓库名称为 **SciCoreAgent**。为保持已有安装和脚本兼容，当前 Python 包名及命令仍使用 **BiocoreagentV2.0 / biocoreagent-v2**；后续如更名会提供迁移期，不会静默破坏旧接口。
+仓库名称为 **SciCoreAgent**。Python 包名为 `scicore`（三个子包 `scicore.kernel` / `scicore.agent` / `scicore.bio`），命令行入口统一为 `scicore*`。
 
 ## 为什么做这个项目
 
@@ -92,7 +92,7 @@ Canonical Trace 记录脱敏后的用户输入、模型/工具事件、文件影
 
 未配置 Postgres 时，系统回退到本地 SQLite FTS5/BM25 + Dense Hash。当前 Postgres embedding 保存为 JSONB，在作用域过滤后的候选集上计算精确余弦；若所用镜像含 `vector` 扩展（如 `pgvector/pgvector:pg15`），`initialize()` 会幂等启用 `embedding vector(256)` + HNSW 并在检索时用 `embedding <=> query` 逼近 dense——**该 pgvector ANN 为可选项，默认仍是 JSONB，且未在仓库 CI 内验证（无 DSN 时测试跳过）**。
 
-语义嵌入为**双档可选**：默认是确定性、离线、可逐字节复现的哈希嵌入（`dense_hash_fallback`，见 [pico/features/postgres_memory.py](pico/features/postgres_memory.py)）；只有安装 `memory-postgres` 附加包并设置 `BIOCOREAGENT_EMBEDDING_BACKEND=sentence-transformers`（见 [`.env.example`](.env.example)）时才启用真实 SentenceTransformer 语义向量，否则检索永远可本地复现，不依赖外部模型或网络。
+语义嵌入为**双档可选**：默认是确定性、离线、可逐字节复现的哈希嵌入（`dense_hash_fallback`，见 [scicore/kernel/features/postgres_memory.py](scicore/kernel/features/postgres_memory.py)）；只有安装 `memory-postgres` 附加包并设置 `SCICORE_EMBEDDING_BACKEND=sentence-transformers`（见 [`.env.example`](.env.example)）时才启用真实 SentenceTransformer 语义向量，否则检索永远可本地复现，不依赖外部模型或网络。
 
 详细设计见 [记忆架构](docs/memory_architecture.md)。
 
@@ -107,25 +107,25 @@ Canonical Trace 记录脱敏后的用户输入、模型/工具事件、文件影
 
 ## 代码架构
 
-本项目是**一个 harness，三个 Python 包**：`biocoreagent/` 负责把 `pico/` 的通用 agent 内核与 `corecoder/` 的科研/生信域能力拼装成 CLI、REPL 与 benchmark 入口。控制平面（Pico）与域平面（CoreCoder）在 `BioPico` 处合流，领域工具只能经由 Pico 的单一工具闸口执行，无法绕过它另行执行。
+本项目是**一个 harness，三个 Python 包**：`scicore/bio/` 负责把 `scicore/kernel/` 的通用 agent 内核与 `scicore/agent/` 的科研/生信域能力拼装成 CLI、REPL 与 benchmark 入口。控制平面（kernel）与域平面（scicore/agent）在 `BioRuntime` 处合流，领域工具只能经由 kernel 的单一工具闸口执行，无法绕过它另行执行。
 
 ~~~text
 用户 / CLI
     |
     v
-biocoreagent/                   拼装与审计层
-  ├── cli / __main__            主入口（biocoreagent-v2）
-  ├── runtime.py                BioPico = Pico + 领域/编排能力
+scicore/bio/                   拼装与审计层
+  ├── cli / __main__            主入口（scicore）
+  ├── runtime.py                BioRuntime = kernel + 领域/编排能力
   ├── orchestrator.py           AsyncMultiAgentOrchestrator
   ├── audit / evidence          AuditTrail + SHA-256 内容寻址证据
   ├── replay / replay_cli       回放、评分卡、source 重建
   └── workflow_ir / capabilities / domain
     |
-    +-- pico/                   通用 agent 内核（控制平面）
+    +-- scicore/kernel/                   通用 agent 内核（控制平面）
     |     AgentLoop · ContextManager（四层压缩）· ToolExecutor（单一工具闸口）
     |     LayeredMemory（三层记忆）· TaskState/Checkpoint · RunStore · 模型适配
     |
-    +-- corecoder/              科研/生信域（域平面）
+    +-- scicore/agent/              科研/生信域（域平面）
           transcriptome（能力契约/注册表）· tools/bio（生信工具链）
           knowledge_base（RAG+Skill+Wiki）· mcp_client · skill_router
           eval/bixbench（benchmark 适配 + 确定性解析器）
@@ -135,23 +135,23 @@ biocoreagent/                   拼装与审计层
 
 | 包 | 关键模块 | 职责 |
 |---|---|---|
-| `pico/` | `agent_loop.py`、`runtime.py`、`context_manager.py`、`tool_executor.py`、`task_state.py`、`checkpoint.py`、`session_store.py`、`run_store.py`、`features/` | 可复用通用 agent 内核：驱动「感知→决策→行动→记录」主循环、按预算组 prompt 并做四层上下文压缩、提供统一工具执行闸口（校验/审批/重复检测/workspace diff）、`ask()` 生命周期状态机与断点恢复、SQLite 会话态与单次运行审计工件落盘、三层记忆（会话/本地/Postgres）与科研知识图谱、模型后端适配与确定性 FakeModel |
-| `corecoder/` | `tools/bio/`、`transcriptome/`、`knowledge_base.py`、`skills.py`、`wiki.py`、`bio/rag_store.py`、`sedimentation.py`、`skill_router.py`、`mcp_client.py`、`policy.py`、`remote.py`、`eval/` | 科研/生信域扩展：生信工具链（协议/证据/DESeq2/R桥/count matrix/workflow）、转录组能力契约与注册表 `CAPABILITIES`、统一 RAG+Skill+Wiki 检索、DREAM 后台审查沉淀、三层技能路由、外部 MCP 客户端、命令/工作区安全策略、BixBench 适配与确定性回答解析器 |
-| `biocoreagent/` | `cli.py`、`runtime.py`、`orchestrator.py`、`audit.py`、`evidence.py`、`replay.py`、`workflow_ir.py`、`capabilities.py`、`domain.py`、`analysis_router.py` | 拼装与审计层：`BioPico` 注入角色工具策略/审计/证据/审批/领域编排，`AsyncMultiAgentOrchestrator` 管理多 Agent 生命周期，`AuditTrail` 追加式 JSONL + 脱敏，`EvidenceManager`/内容寻址存储形成证据链，回放与评分卡，工作流 IR 与能力注册表，领域/MCP 适配，分析路由/答案校验/降级/导出 |
+| `scicore/kernel/` | `agent_loop.py`、`runtime.py`、`context_manager.py`、`tool_executor.py`、`task_state.py`、`checkpoint.py`、`session_store.py`、`run_store.py`、`features/` | 可复用通用 agent 内核：驱动「感知→决策→行动→记录」主循环、按预算组 prompt 并做四层上下文压缩、提供统一工具执行闸口（校验/审批/重复检测/workspace diff）、`ask()` 生命周期状态机与断点恢复、SQLite 会话态与单次运行审计工件落盘、三层记忆（会话/本地/Postgres）与科研知识图谱、模型后端适配与确定性 FakeModel |
+| `scicore/agent/` | `tools/bio/`、`transcriptome/`、`knowledge_base.py`、`skills.py`、`wiki.py`、`bio/rag_store.py`、`sedimentation.py`、`skill_router.py`、`mcp_client.py`、`policy.py`、`remote.py`、`eval/` | 科研/生信域扩展：生信工具链（协议/证据/DESeq2/R桥/count matrix/workflow）、转录组能力契约与注册表 `CAPABILITIES`、统一 RAG+Skill+Wiki 检索、DREAM 后台审查沉淀、三层技能路由、外部 MCP 客户端、命令/工作区安全策略、BixBench 适配与确定性回答解析器 |
+| `scicore/bio/` | `cli.py`、`runtime.py`、`orchestrator.py`、`audit.py`、`evidence.py`、`replay.py`、`workflow_ir.py`、`capabilities.py`、`domain.py`、`analysis_router.py` | 拼装与审计层：`BioRuntime` 注入角色工具策略/审计/证据/审批/领域编排，`AsyncMultiAgentOrchestrator` 管理多 Agent 生命周期，`AuditTrail` 追加式 JSONL + 脱敏，`EvidenceManager`/内容寻址存储形成证据链，回放与评分卡，工作流 IR 与能力注册表，领域/MCP 适配，分析路由/答案校验/降级/导出 |
 
 ### 命令行入口
 
 | 命令 | 入口模块 | 用途 |
 |---|---|---|
-| `biocoreagent-v2` / `biocoreagent` | `biocoreagent.cli:main` | 交互式 / 一次性科研任务主入口 |
-| `biocore-replay` | `biocoreagent.replay_cli:main` | 解释产物、回放、重建源代码、评审 case |
-| `biocore-bixbench` | `corecoder.eval.bixbench:main` | BixBench benchmark 运行与评分 |
-| `biocore-mcp` | `corecoder.mcp_server:main` | 把内置工具外露为 stdio MCP server |
-| `biocore-doctor` | `corecoder.bio_cli:main` | 文献综述/协议采集/系统状态诊断 |
+| `scicore` | `scicore.bio.cli:main` | 交互式 / 一次性科研任务主入口 |
+| `scicore-replay` | `scicore.bio.replay_cli:main` | 解释产物、回放、重建源代码、评审 case |
+| `scicore-bixbench` | `scicore.agent.eval.bixbench:main` | BixBench benchmark 运行与评分 |
+| `scicore-mcp` | `scicore.agent.mcp_server:main` | 把内置工具外露为 stdio MCP server |
+| `scicore-doctor` | `scicore.agent.bio_cli:main` | 文献综述/协议采集/系统状态诊断 |
 
 ### 运行态目录与关键文档
 
-- 运行态默认落在 `.biocoreagent/`（审计/证据/多 Agent/回放）与 `.pico/`（记忆/会话），两者均被 Git 忽略。
+- 运行态默认落在 `.scicore/`（审计/证据/多 Agent/回放）与 `.scicore/kernel/`（记忆/会话），两者均被 Git 忽略。
 - 模块级细节与固化边界：[架构](docs/architecture.md) · [审计系统](docs/audit_system.md) · [Trace/Replay](docs/trace_replay_architecture.md) · [多智能体设计](docs/multiagent_design.md) · [记忆架构](docs/memory_architecture.md) · [知识沉淀](docs/knowledge_sedimentation.md) · [运行时状态机](docs/runtime_state_machine.md)
 
 ## 已验证结果与边界
@@ -168,7 +168,7 @@ biocoreagent/                   拼装与审计层
 - 知识能力单元（C4/C1/C3）：统一知识库 `cross_search`/`cross_enhance`/`suggest_skill_from_wiki`、语义嵌入双档、会话语义切块的单元测试；全部纯离线可跑，不依赖模型、网络或 Postgres。
 - BixBench Verified-50：历史 run 在仓库外完成，仓库内不可复跑；口径见 [工作流与边界](docs/verified50_benchmark_workflow.md#历史出分与可复现性说明)。
 
-完整口径、复现命令和禁止使用的夸大表述见 [工程证据说明](docs/metrics/biocoreagent-resume-evidence.md) 与 [目标完成审计](docs/resume/goal_completion_audit.md)。
+完整口径、复现命令和禁止使用的夸大表述见 [工程证据说明](docs/metrics/scicore.bio-resume-evidence.md) 与 [目标完成审计](docs/resume/goal_completion_audit.md)。
 
 ## 快速开始
 
@@ -200,10 +200,10 @@ notepad .env
 密钥只写入本机 .env；该文件已被 Git 忽略。示例：
 
 ~~~env
-BIOCOREAGENT_PROVIDER=deepseek
-BIOCOREAGENT_DEEPSEEK_API_KEY=replace-me
-BIOCOREAGENT_DEEPSEEK_API_BASE=https://api.deepseek.com/anthropic
-BIOCOREAGENT_DEEPSEEK_MODEL=deepseek-chat
+SCICORE_PROVIDER=deepseek
+SCICORE_DEEPSEEK_API_KEY=replace-me
+SCICORE_DEEPSEEK_API_BASE=https://api.deepseek.com/anthropic
+SCICORE_DEEPSEEK_MODEL=deepseek-chat
 ~~~
 
 也可通过 --provider 选择 ollama、openai 或 anthropic。请根据对应服务填写模型名与 base URL。
@@ -213,19 +213,19 @@ BIOCOREAGENT_DEEPSEEK_MODEL=deepseek-chat
 交互模式：
 
 ~~~powershell
-biocoreagent-v2 --cwd D:\path\to\project --approval ask
+scicore --cwd D:\path\to\project --approval ask
 ~~~
 
 一次性科研任务：
 
 ~~~powershell
-biocoreagent-v2 --cwd D:\path\to\project --approval ask "检查 counts.tsv，并制定可验证的差异分析计划"
+scicore --cwd D:\path\to\project --approval ask "检查 counts.tsv，并制定可验证的差异分析计划"
 ~~~
 
 查看完整参数：
 
 ~~~powershell
-biocoreagent-v2 --help
+scicore --help
 ~~~
 
 默认审批策略为 ask。auto 会减少交互但不会取消策略校验；never 会拒绝需要人工批准的高风险动作。
@@ -242,10 +242,10 @@ docker compose --profile memory up -d memory-postgres
 在本机 .env 中配置：
 
 ~~~env
-BIOCOREAGENT_MEMORY_POSTGRES_DSN=postgresql://biocoreagent:biocoreagent_dev_only@127.0.0.1:54329/biocoreagent_memory
-BIOCOREAGENT_MEMORY_USER_SCOPE=local-user
-BIOCOREAGENT_EMBEDDING_BACKEND=sentence-transformers
-BIOCOREAGENT_EMBEDDING_MODEL=all-MiniLM-L6-v2
+SCICORE_MEMORY_POSTGRES_DSN=postgresql://scicore.bio:scicore_bio_dev_only@127.0.0.1:54329/scicore_bio_memory
+SCICORE_MEMORY_USER_SCOPE=local-user
+SCICORE_EMBEDDING_BACKEND=sentence-transformers
+SCICORE_EMBEDDING_MODEL=all-MiniLM-L6-v2
 ~~~
 
 compose 文件中的密码只用于本机开发。生产环境必须使用外部密钥、访问控制、备份与迁移方案。
@@ -255,32 +255,32 @@ compose 文件中的密码只用于本机开发。生产环境必须使用外部
 解释一个交付物：
 
 ~~~powershell
-biocore-replay artifact explain path\to\artifact.csv
+scicore-replay artifact explain path\to\artifact.csv
 ~~~
 
 查看运行在某事件时捕获的源代码：
 
 ~~~powershell
-biocore-replay source show .biocoreagent\runs\RUN_ID --at EVENT_ID
+scicore-replay source show .scicore\runs\RUN_ID --at EVENT_ID
 ~~~
 
 将当时代码重建到新的空目录（不会覆盖当前项目）：
 
 ~~~powershell
-biocore-replay source materialize .biocoreagent\runs\RUN_ID --at EVENT_ID --target D:\empty\reconstructed
+scicore-replay source materialize .scicore\runs\RUN_ID --at EVENT_ID --target D:\empty\reconstructed
 ~~~
 
 从历史运行抽取 replay case，并使用当前 runtime 生成 fresh trace：
 
 ~~~powershell
-biocore-replay case extract .biocoreagent\runs\RUN_ID --case-id my-case
-biocore-replay run benchmarks\replay_cases\my-case\case.json
+scicore-replay case extract .scicore\runs\RUN_ID --case-id my-case
+scicore-replay run benchmarks\replay_cases\my-case\case.json
 ~~~
 
 查看全部子命令：
 
 ~~~powershell
-biocore-replay --help
+scicore-replay --help
 ~~~
 
 ## 评测与测试
@@ -300,7 +300,7 @@ python -m pytest -q --basetemp C:\tmp\pytest-scicoreagent
 固定 Harness 回归、上下文压缩和调度指标：
 
 ~~~powershell
-python -c "from pico.evaluation.evaluator import run_harness_regression_v2; import json; print(json.dumps(run_harness_regression_v2()['summary'], indent=2))"
+python -c "from scicore.kernel.evaluation.evaluator import run_harness_regression_v2; import json; print(json.dumps(run_harness_regression_v2()['summary'], indent=2))"
 python scripts\benchmark_resume_metrics.py
 ~~~
 
@@ -308,7 +308,7 @@ python scripts\benchmark_resume_metrics.py
 
 ~~~powershell
 python scripts\generate_replay_case_suite.py          # 重建 benchmarks/replay_cases/engineering 下的 100 个 case
-biocore-replay run benchmarks\replay_cases\engineering --output-root .biocoreagent\replay_runs\smoke100
+scicore-replay run benchmarks\replay_cases\engineering --output-root .scicore\replay_runs\smoke100
 ~~~
 
 上面 `run` 对目录套件会自动检测「每条 case 自带 fake_outputs.json」并走 `run_suite_deterministic`，逐条用其自身的确定性输出驱动工具、真的在 workspace 产生产物并被 verifier 检查；跑完 scorecard 需全部用例通过。相应测试 `tests/test_replay_smoke_100.py`（`--run slow` 才跑全套）。
@@ -319,7 +319,7 @@ biocore-replay run benchmarks\replay_cases\engineering --output-root .biocoreage
 python -m pytest tests\test_knowledge_base_unified.py tests\test_embedding_provider.py tests\test_session_chunks_semantic.py -q
 ~~~
 
-`biocoreagent\replay.py`、`pico\session_store.py` 的改动均以「默认行为不变」为铁律：`create_chunks` 默认 `strategy="fixed"` 逐字节保持原有打包逻辑；`embedding_provider_from_environment` 默认仍是确定性哈希嵌入。设 `BIOCOREAGENT_EMBEDDING_BACKEND=sentence-transformers` 或传 `strategy="semantic"` 仅显式启用时才改变行为。
+`scicore.bio\replay.py`、`scicore.kernel\session_store.py` 的改动均以「默认行为不变」为铁律：`create_chunks` 默认 `strategy="fixed"` 逐字节保持原有打包逻辑；`embedding_provider_from_environment` 默认仍是确定性哈希嵌入。设 `SCICORE_EMBEDDING_BACKEND=sentence-transformers` 或传 `strategy="semantic"` 仅显式启用时才改变行为。
 
 长期记忆召回与知识图谱评测：
 
@@ -334,14 +334,14 @@ python scripts\evaluate_memory_recall.py benchmarks\memory_recall\synthetic-v1\f
 
 ~~~powershell
 docker compose --profile memory up -d memory-postgres
-set BIOCOREAGENT_MEMORY_POSTGRES_DSN=postgresql://biocoreagent:biocoreagent_dev_only@127.0.0.1:54329/biocoreagent_memory
+set SCICORE_MEMORY_POSTGRES_DSN=postgresql://scicore.bio:scicore_bio_dev_only@127.0.0.1:54329/scicore_bio_memory
 python -m pytest tests\test_pgvector_migration.py tests\test_postgres_memory_integration.py -q
 ~~~
 
 内置 BixBench-compatible smoke（不等同于官方完整数据集）：
 
 ~~~powershell
-python -m corecoder.eval.bixbench --output-dir .biocoreagent\bixbench_runs\smoke
+python -m scicore.agent.eval.bixbench --output-dir .scicore\bixbench_runs\smoke
 ~~~
 
 大型 benchmark 数据、原始生物数据和运行输出应放在仓库外，不应提交到 Git。
@@ -349,9 +349,9 @@ python -m corecoder.eval.bixbench --output-dir .biocoreagent\bixbench_runs\smoke
 ## 目录结构
 
 ~~~text
-biocoreagent/       统一 runtime、多 Agent Supervisor、审计、证据和 replay
-pico/               轻量 AgentLoop、上下文、会话态、记忆与评测内核
-corecoder/          科研工具、能力路由、Skill/Wiki 沉淀及 benchmark adapter
+scicore/bio/       统一 runtime、多 Agent Supervisor、审计、证据和 replay
+scicore/kernel/               轻量 AgentLoop、上下文、会话态、记忆与评测内核
+scicore/agent/          科研工具、能力路由、Skill/Wiki 沉淀及 benchmark adapter
 benchmarks/         固定工程资格集、fixture 与 replay case
 tests/              单元、集成、回放及确定性回归测试
 artifacts/          本地评测产物输出目录（指标证据不入库）
@@ -359,7 +359,7 @@ docs/               架构、边界、复现说明与设计记录
 scripts/            安全检查、benchmark 和记忆评测脚本
 ~~~
 
-运行态默认写入 .biocoreagent/ 或 .pico/，两者都被 Git 忽略。
+运行态默认写入 .scicore/ 或 .scicore/kernel/，两者都被 Git 忽略。
 
 ## 安全与数据治理
 

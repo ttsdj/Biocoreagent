@@ -3,7 +3,7 @@ requires = ["setuptools>=69", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "BiocoreagentV2.0"
+name = "scicore-agent"
 version = "2.0.0a2"
 authors = [{ name = "ttsdj", email = "chengzhideng1@gmail.com" }]
 description = "Auditable research-oriented coding agent harness with bioinformatics workflow routing"
@@ -24,19 +24,18 @@ dev = ["pytest>=8.0", "ruff>=0.4"]
 memory-postgres = ["psycopg[binary]>=3.1", "sentence-transformers>=3.0"]
 
 [project.scripts]
-biocoreagent-v2 = "biocoreagent.cli:main"
-biocoreagent = "biocoreagent.cli:main"
-biocore-mcp = "corecoder.mcp_server:main"
-biocore-doctor = "corecoder.bio_cli:main"
-biocore-bixbench = "corecoder.eval.bixbench:main"
-biocore-replay = "biocoreagent.replay_cli:main"
+scicore = "scicore.bio.cli:main"
+scicore-mcp = "scicore.agent.mcp_server:main"
+scicore-doctor = "scicore.agent.bio_cli:main"
+scicore-bixbench = "scicore.agent.eval.bixbench:main"
+scicore-replay = "scicore.bio.replay_cli:main"
 
 [tool.setuptools.packages.find]
-include = ["biocoreagent*", "pico*", "corecoder*"]
+include = ["scicore*"]
 
 [tool.setuptools.package-data]
-"corecoder.bio" = ["skills/*.md"]
-"corecoder.eval" = ["bixbench_smoke.json", "bixbench_fixtures/rnaseq_small/*.tsv"]
+"scicore.agent.bio" = ["skills/*.md"]
+"scicore.agent.eval" = ["bixbench_smoke.json", "bixbench_fixtures/rnaseq_small/*.tsv"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -2,9 +2,9 @@ import json
 import zipfile
 from pathlib import Path
 
-from pico.providers.clients import FakeModelClient
+from scicore.kernel.providers.clients import FakeModelClient
 
-from corecoder.eval.bixbench import _newick_tree_metrics, _score_official_answer, run_bixbench, run_official_bixbench
+from scicore.agent.eval.bixbench import _newick_tree_metrics, _score_official_answer, run_bixbench, run_official_bixbench
 
 
 def _official_row(question_id, question, ideal, *, eval_mode="str_verifier"):
@@ -127,7 +127,7 @@ def test_official_bixbench_agent_extracts_gene_specific_median_patristic_distanc
     report = run_official_bixbench(
         dataset,
         output_dir=tmp_path / "out",
-        strategy="biocoreagent_agent",
+        strategy="scicore_bio_agent",
         model_client_factory=factory,
         extract_capsules=True,
     )
@@ -176,7 +176,7 @@ def test_official_bixbench_agent_extracts_gene_specific_evolutionary_rate(tmp_pa
     report = run_official_bixbench(
         dataset,
         output_dir=tmp_path / "out",
-        strategy="biocoreagent_agent",
+        strategy="scicore_bio_agent",
         model_client_factory=factory,
         extract_capsules=True,
     )
@@ -233,7 +233,7 @@ def test_official_bixbench_agent_extracts_swarm_ratio_closest_to_strain_one(tmp_
     report = run_official_bixbench(
         dataset,
         output_dir=tmp_path / "out",
-        strategy="biocoreagent_agent",
+        strategy="scicore_bio_agent",
         model_client_factory=factory,
         extract_capsules=True,
     )
@@ -297,7 +297,7 @@ def test_official_bixbench_agent_extracts_glm_aic_and_coefficient_from_notebook(
     report = run_official_bixbench(
         dataset,
         output_dir=tmp_path / "out",
-        strategy="biocoreagent_agent",
+        strategy="scicore_bio_agent",
         model_client_factory=factory,
         extract_capsules=True,
     )
@@ -368,7 +368,7 @@ def test_official_bixbench_agent_calculates_methylation_filter_statistics(tmp_pa
     report = run_official_bixbench(
         dataset,
         output_dir=tmp_path / "out",
-        strategy="biocoreagent_agent",
+        strategy="scicore_bio_agent",
         extract_capsules=True,
         model_client_factory=lambda: calls.append("called") or FakeModelClient(["<final>ANSWER: wrong</final>"]),
     )
@@ -422,7 +422,7 @@ def test_official_bixbench_agent_calculates_mageck_replicate_spearman(tmp_path):
     report = run_official_bixbench(
         dataset,
         output_dir=tmp_path / "out",
-        strategy="biocoreagent_agent",
+        strategy="scicore_bio_agent",
         extract_capsules=True,
         model_client_factory=lambda: calls.append("called") or FakeModelClient(["<final>ANSWER: wrong</final>"]),
     )
@@ -482,7 +482,7 @@ def test_official_bixbench_agent_extracts_enrichment_metrics_from_notebook_table
     report = run_official_bixbench(
         dataset,
         output_dir=tmp_path / "out",
-        strategy="biocoreagent_agent",
+        strategy="scicore_bio_agent",
         extract_capsules=True,
         model_client_factory=lambda: calls.append("called") or FakeModelClient(["<final>ANSWER: wrong</final>"]),
     )
@@ -529,7 +529,7 @@ def test_official_bixbench_agent_extracts_total_deg_count_from_notebook_output(t
     report = run_official_bixbench(
         dataset,
         output_dir=tmp_path / "out",
-        strategy="biocoreagent_agent",
+        strategy="scicore_bio_agent",
         extract_capsules=True,
         model_client_factory=lambda: calls.append("called") or FakeModelClient(["<final>ANSWER: wrong</final>"]),
     )
@@ -560,7 +560,7 @@ def test_official_bixbench_agent_extracts_gene_length_correlation_table(tmp_path
     rows = [_official_row(f"bix-demo-q{i}", question, ideal) for i, (question, ideal) in enumerate(questions, start=1)]
     (dataset / "BixBench.jsonl").write_text("\n".join(json.dumps(row) for row in rows) + "\n", encoding="utf-8")
     calls = []
-    report = run_official_bixbench(dataset, output_dir=tmp_path / "out", strategy="biocoreagent_agent", extract_capsules=True, model_client_factory=lambda: calls.append("called") or FakeModelClient(["<final>ANSWER: wrong</final>"]))
+    report = run_official_bixbench(dataset, output_dir=tmp_path / "out", strategy="scicore_bio_agent", extract_capsules=True, model_client_factory=lambda: calls.append("called") or FakeModelClient(["<final>ANSWER: wrong</final>"]))
     assert calls == []
     assert report["summary"]["passed"] == 2
     assert [task["prediction"] for task in report["tasks"]] == ["CD14", "0.020527"]
@@ -584,7 +584,7 @@ def test_official_bixbench_agent_extracts_top_pathway_fraction_and_replicate_dir
     ]
     (dataset / "BixBench.jsonl").write_text("\n".join(json.dumps(row) for row in rows) + "\n", encoding="utf-8")
     calls = []
-    report = run_official_bixbench(dataset, output_dir=tmp_path / "out", strategy="biocoreagent_agent", extract_capsules=True, model_client_factory=lambda: calls.append("called") or FakeModelClient(["<final>ANSWER: wrong</final>"]))
+    report = run_official_bixbench(dataset, output_dir=tmp_path / "out", strategy="scicore_bio_agent", extract_capsules=True, model_client_factory=lambda: calls.append("called") or FakeModelClient(["<final>ANSWER: wrong</final>"]))
     assert calls == []
     assert [task["prediction"] for task in report["tasks"]] == ["0.1", "Increases the number of differentially expressed genes"]
     assert report["summary"]["passed"] == 2
@@ -599,7 +599,7 @@ def test_official_bixbench_agent_extracts_directional_conclusion(tmp_path):
     row = _official_row("bix-demo-q1", "Determine whether upregulation or downregulation of genes primarily drives the metabolic effects.", "Downregulation", eval_mode="llm_verifier")
     (dataset / "BixBench.jsonl").write_text(json.dumps(row) + "\n", encoding="utf-8")
     calls = []
-    report = run_official_bixbench(dataset, output_dir=tmp_path / "out", strategy="biocoreagent_agent", extract_capsules=True, model_client_factory=lambda: calls.append("called") or FakeModelClient(["<final>ANSWER: wrong</final>"]))
+    report = run_official_bixbench(dataset, output_dir=tmp_path / "out", strategy="scicore_bio_agent", extract_capsules=True, model_client_factory=lambda: calls.append("called") or FakeModelClient(["<final>ANSWER: wrong</final>"]))
     assert calls == []
     assert report["summary"]["passed"] == 1
 
@@ -635,7 +635,7 @@ def test_official_bixbench_agent_extracts_proteomics_fold_change(tmp_path):
     ]
     (dataset / "BixBench.jsonl").write_text("\n".join(json.dumps(row) for row in rows) + "\n", encoding="utf-8")
     calls = []
-    report = run_official_bixbench(dataset, output_dir=tmp_path / "out", strategy="biocoreagent_agent", extract_capsules=True, model_client_factory=lambda: calls.append("called") or FakeModelClient(["<final>ANSWER: wrong</final>"]))
+    report = run_official_bixbench(dataset, output_dir=tmp_path / "out", strategy="scicore_bio_agent", extract_capsules=True, model_client_factory=lambda: calls.append("called") or FakeModelClient(["<final>ANSWER: wrong</final>"]))
     assert calls == []
     assert report["summary"]["passed"] == 2
     assert [task["prediction"] for task in report["tasks"]] == ["4.81-fold increase in tumor", "2.27"]
@@ -678,7 +678,7 @@ def test_official_bixbench_agent_counts_oldest_carrier_variants_and_coding_synon
     ]
     (dataset / "BixBench.jsonl").write_text("\n".join(json.dumps(row) for row in rows) + "\n", encoding="utf-8")
     calls = []
-    report = run_official_bixbench(dataset, output_dir=tmp_path / "out", strategy="biocoreagent_agent", extract_capsules=True, model_client_factory=lambda: calls.append("called") or FakeModelClient(["<final>ANSWER: wrong</final>"]))
+    report = run_official_bixbench(dataset, output_dir=tmp_path / "out", strategy="scicore_bio_agent", extract_capsules=True, model_client_factory=lambda: calls.append("called") or FakeModelClient(["<final>ANSWER: wrong</final>"]))
     assert calls == []
     assert report["summary"]["passed"] == 2
     assert report["tasks"][0]["prediction"] == "NOTCH1"
@@ -808,7 +808,7 @@ def test_official_bixbench_agent_strategy_scores_and_writes_artifacts(tmp_path):
     report = run_official_bixbench(
         dataset,
         output_dir=tmp_path / "out",
-        strategy="biocoreagent_agent",
+        strategy="scicore_bio_agent",
         model_client_factory=factory,
         task_timeout_seconds=30,
     )
@@ -870,7 +870,7 @@ def test_official_bixbench_agent_extracts_executed_notebook_statistics(tmp_path)
     report = run_official_bixbench(
         dataset,
         output_dir=tmp_path / "out",
-        strategy="biocoreagent_agent",
+        strategy="scicore_bio_agent",
         extract_capsules=True,
         model_client_factory=factory,
     )
@@ -920,7 +920,7 @@ def test_official_bixbench_agent_calculates_reduction_from_executed_notebook_or(
     report = run_official_bixbench(
         dataset,
         output_dir=tmp_path / "out",
-        strategy="biocoreagent_agent",
+        strategy="scicore_bio_agent",
         extract_capsules=True,
         model_client_factory=lambda: FakeModelClient(["<final>ANSWER: wrong</final>"]),
     )
@@ -973,7 +973,7 @@ def test_official_bixbench_agent_extracts_scogs_treeness(tmp_path):
     report = run_official_bixbench(
         dataset,
         output_dir=tmp_path / "out",
-        strategy="biocoreagent_agent",
+        strategy="scicore_bio_agent",
         extract_capsules=True,
         model_client_factory=lambda: calls.append("called") or FakeModelClient(["<final>ANSWER: wrong</final>"]),
     )
@@ -1021,7 +1021,7 @@ def test_official_bixbench_agent_extracts_scogs_parsimony_from_alignments(tmp_pa
     report = run_official_bixbench(
         dataset,
         output_dir=tmp_path / "out",
-        strategy="biocoreagent_agent",
+        strategy="scicore_bio_agent",
         extract_capsules=True,
         model_client_factory=lambda: FakeModelClient(["<final>ANSWER: wrong</final>"]),
     )
@@ -1071,7 +1071,7 @@ def test_official_bixbench_agent_extracts_scogs_saturation_from_alignments(tmp_p
     report = run_official_bixbench(
         dataset,
         output_dir=tmp_path / "out",
-        strategy="biocoreagent_agent",
+        strategy="scicore_bio_agent",
         extract_capsules=True,
         model_client_factory=lambda: calls.append("called") or FakeModelClient(["<final>ANSWER: wrong</final>"]),
     )
@@ -1132,7 +1132,7 @@ def test_official_bixbench_agent_extracts_crispr_correlation_from_notebook(tmp_p
     report = run_official_bixbench(
         dataset,
         output_dir=tmp_path / "out",
-        strategy="biocoreagent_agent",
+        strategy="scicore_bio_agent",
         extract_capsules=True,
         model_client_factory=lambda: calls.append("called") or FakeModelClient(["<final>ANSWER: wrong</final>"]),
     )
@@ -1207,7 +1207,7 @@ def test_official_bixbench_agent_formats_crispr_correlation_range_answers(tmp_pa
     report = run_official_bixbench(
         dataset,
         output_dir=tmp_path / "out",
-        strategy="biocoreagent_agent",
+        strategy="scicore_bio_agent",
         extract_capsules=True,
         model_client_factory=lambda: calls.append("called") or FakeModelClient(["<final>ANSWER: wrong</final>"]),
     )
@@ -1268,7 +1268,7 @@ def test_official_bixbench_agent_extracts_variant_pathogenicity_table(tmp_path):
     report = run_official_bixbench(
         dataset,
         output_dir=tmp_path / "out",
-        strategy="biocoreagent_agent",
+        strategy="scicore_bio_agent",
         extract_capsules=True,
         model_client_factory=lambda: calls.append("called") or FakeModelClient(["<final>ANSWER: wrong</final>"]),
     )
@@ -1328,7 +1328,7 @@ def test_official_bixbench_agent_extracts_swarm_imaging_stats(tmp_path):
     report = run_official_bixbench(
         dataset,
         output_dir=tmp_path / "out",
-        strategy="biocoreagent_agent",
+        strategy="scicore_bio_agent",
         extract_capsules=True,
         model_client_factory=lambda: calls.append("called") or FakeModelClient(["<final>ANSWER: wrong</final>"]),
     )
@@ -1405,7 +1405,7 @@ def test_official_bixbench_agent_extracts_neun_notebook_stats(tmp_path):
     report = run_official_bixbench(
         dataset,
         output_dir=tmp_path / "out",
-        strategy="biocoreagent_agent",
+        strategy="scicore_bio_agent",
         extract_capsules=True,
         model_client_factory=lambda: calls.append("called") or FakeModelClient(["<final>ANSWER: wrong</final>"]),
     )
@@ -1486,7 +1486,7 @@ def test_official_bixbench_agent_extracts_bcg_corona_chisquare(tmp_path):
     report = run_official_bixbench(
         dataset,
         output_dir=tmp_path / "out",
-        strategy="biocoreagent_agent",
+        strategy="scicore_bio_agent",
         extract_capsules=True,
         model_client_factory=lambda: calls.append("called") or FakeModelClient(["<final>ANSWER: wrong</final>"]),
     )
@@ -1520,13 +1520,13 @@ def test_official_bixbench_resume_reuses_task_report(tmp_path):
     first = run_official_bixbench(
         dataset,
         output_dir=out,
-        strategy="biocoreagent_agent",
+        strategy="scicore_bio_agent",
         model_client_factory=lambda: FakeModelClient(["<final>ANSWER: abc</final>"]),
     )
     second = run_official_bixbench(
         dataset,
         output_dir=out,
-        strategy="biocoreagent_agent",
+        strategy="scicore_bio_agent",
         model_client_factory=lambda: FakeModelClient(["<final>ANSWER: wrong</final>"]),
         resume=True,
     )

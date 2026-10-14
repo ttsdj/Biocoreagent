@@ -1,1 +1,1 @@
-"""MCP servers for BioCoreCoder."""
+"""MCP servers for SciCoreAgent."""

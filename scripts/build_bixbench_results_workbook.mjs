@@ -3,7 +3,7 @@ import path from "node:path";
 import { SpreadsheetFile, Workbook } from "@oai/artifact-tool";
 
 const repoRoot = process.cwd();
-const localRuns = path.join(repoRoot, ".biocoreagent", "bixbench_runs");
+const localRuns = path.join(repoRoot, ".scicore", "bixbench_runs");
 const externalRuns = "F:\\aicoding\\bixbench_runs";
 const outputDir = path.join(localRuns, "reports");
 const outputPath = path.join(outputDir, "bixbench_results_summary.xlsx");
@@ -39,7 +39,7 @@ function classify(error, firstFailure, strategy, passed) {
     return "insufficient_quota";
   }
   if (firstFailure) return firstFailure;
-  if (strategy === "biocoreagent_agent") return "agent_not_passed";
+  if (strategy === "scicore_bio_agent") return "agent_not_passed";
   return "baseline_or_non_agent";
 }
 
@@ -108,7 +108,7 @@ const round50Names = new Set([
 const round50Rows = rows.filter((row) => round50Names.has(row.run));
 const best50 = round50Rows.length ? [...round50Rows].sort((a, b) => b.passAt1 - a.passAt1)[0] : null;
 const latestAgent = rows
-  .filter((row) => row.strategy === "biocoreagent_agent")
+  .filter((row) => row.strategy === "scicore_bio_agent")
   .sort((a, b) => a.modifiedMs - b.modifiedMs)
   .at(-1);
 
@@ -125,7 +125,7 @@ const conclusion = best50
   ? `50-task evaluation completed. Best run: ${best50.run}, pass@1 ${(best50.passAt1 * 100).toFixed(2)}%.`
   : latestAgent
     ? `Latest agent run: ${latestAgent.run}, conclusion ${latestAgent.conclusion}.`
-    : "No real biocoreagent_agent run found.";
+    : "No real scicore_bio_agent run found.";
 
 summarySheet.getRange("A1:F1").values = [["BixBench evaluation status", "", "", "", "", ""]];
 summarySheet.getRange("A1:F1").merge();

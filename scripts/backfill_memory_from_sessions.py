@@ -11,8 +11,8 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from pico.memory_pipeline import MemoryPipeline
-from pico.session_store import SessionStore
+from scicore.kernel.memory_pipeline import MemoryPipeline
+from scicore.kernel.session_store import SessionStore
 
 
 def backfill_sessions(store, pipeline, session_ids, *, user_scope="", project_scope=""):

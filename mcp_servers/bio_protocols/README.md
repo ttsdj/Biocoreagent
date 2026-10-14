@@ -54,7 +54,7 @@ Each collected protocol is stored as a `BioProtocolRecord` with:
 ## RAG Storage
 
 ```
-.biocoreagent/rag/
+.scicore/rag/
 ├── protocols.sqlite    # SQLite FTS5
 └── protocols.jsonl     # JSONL backup
 ```

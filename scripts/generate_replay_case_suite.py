@@ -8,7 +8,7 @@ Scorecard 的 100 分满分当成“100 条用例”。
 设计原则
 --------
 1. 每个 case 都是**真实可跑的**：`fake_outputs.json` 里的每一条输出都会真正驱动
-   Pico 控制循环里的一个工具调用，并且真的在 workspace 里产生一个可验证的产物
+   kernel 控制循环里的一个工具调用，并且真的在 workspace 里产生一个可验证的产物
    （list_files / read_file / search / write_file，不用外部二进制、不跑真实模型）。
 2. 数字是真算出来的：凡是写入文件的产品，`expected_files[].sha256` 都是生成器在
    写出时用**精确的 UTF-8 字节内容**实时算出来的，不是拍脑袋。

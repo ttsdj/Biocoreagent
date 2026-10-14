@@ -10,7 +10,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 # were dequantified from the repo).  These tests assert on the resume/ledger content
 # and artifacts; when that content is absent they must skip cleanly rather than
 # hard-fail the committed suite.
-RESUME_DOC = REPO_ROOT / "docs" / "resume" / "biocoreagent_resume_star.md"
+RESUME_DOC = REPO_ROOT / "docs" / "resume" / "scicore_bio_resume_star.md"
 LEDGER_DOC = REPO_ROOT / "docs" / "claim_evidence_ledger.md"
 
 
@@ -94,7 +94,7 @@ def test_resume_document_states_material_claim_boundaries():
     assert "当前 Postgres 实现将 embedding 保存为 JSONB" in resume
     assert "当前 100%/1.000 来自 200 条冻结合成工程资格集" in resume
     assert "官方外部 LLM judge 未运行" in resume
-    assert "44% 是 BioCoreAgent 初版" in resume
+    assert "44% 是 SciCoreAgent 初版" in resume
 
 
 def test_claim_evidence_ledger_matches_artifacts():

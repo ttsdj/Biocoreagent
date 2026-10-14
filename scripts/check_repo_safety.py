@@ -1,4 +1,4 @@
-"""Repository safety gate for BiocoreagentV2.0 releases."""
+"""Repository safety gate for SciCoreAgent releases."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ BLOCKED_NAMES = {
     ".env",
 }
 BLOCKED_PARTS = {
-    ".biocoreagent",
+    ".scicore",
     ".pytest_cache",
     ".tmp",
     "tmp",

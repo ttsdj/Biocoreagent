@@ -27,7 +27,7 @@ def _metric(correct: int, total: int, label: str) -> dict[str, Any]:
 def _load_report(path: Path) -> dict[str, Any]:
     report = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(report, dict) or "summary" not in report or "tasks" not in report:
-        raise ValueError(f"not a biocoreagent BixBench report: {path}")
+        raise ValueError(f"not a scicore.bio BixBench report: {path}")
     return report
 
 
@@ -65,7 +65,7 @@ def _result_rows(report: dict[str, Any], run_id: str) -> list[dict[str, Any]]:
                 "mcq_without_refusal_reasoning": "",
                 "mcq_without_refusal_mapped_answer": "",
                 "mcq_without_refusal_options": "",
-                "grader_model": "biocoreagent_local_verifier",
+                "grader_model": "scicore_bio_local_verifier",
                 "option_chooser_model": "",
                 "judge_error": "",
                 "api_task_id": "",
@@ -84,7 +84,7 @@ def _summary(report: dict[str, Any], result_csv: Path, run_id: str) -> dict[str,
     return {
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
         "title": f"{benchmark.get('name', 'BixBench')} Results",
-        "source_biocoreagent_report": str(Path(report.get("artifacts", {}).get("report_json", "")).resolve())
+        "source_scicore_bio_report": str(Path(report.get("artifacts", {}).get("report_json", "")).resolve())
         if report.get("artifacts", {}).get("report_json")
         else "",
         "verified_50": benchmark.get("verified_50", {}),
@@ -135,8 +135,8 @@ svg {{ width: 100%; max-width: {width}px; height: auto; }}
 <body>
 <div class="panel">
 <h1>{title}</h1>
-<p class="note">Generated from a BioCoreAgent BixBench report. Direct pass@1 only; MCQ modes are not evaluated by BioCoreAgent's local runner.</p>
-<svg viewBox="0 0 {width} {height}" role="img" aria-label="BioCoreAgent BixBench direct score">
+<p class="note">Generated from a SciCoreAgent BixBench report. Direct pass@1 only; MCQ modes are not evaluated by SciCoreAgent's local runner.</p>
+<svg viewBox="0 0 {width} {height}" role="img" aria-label="SciCoreAgent BixBench direct score">
   <line x1="120" y1="{chart_top}" x2="120" y2="{chart_top + chart_height}" stroke="#527463"/>
   <line x1="120" y1="{chart_top + chart_height}" x2="640" y2="{chart_top + chart_height}" stroke="#527463"/>
   <text x="82" y="{chart_top + 5}" font-size="13">100%</text>
@@ -174,8 +174,8 @@ def build(report_path: str | Path, output_dir: str | Path) -> dict[str, str]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Build bio-benchmark-style chart artifacts from a BioCoreAgent BixBench report.")
-    parser.add_argument("--report", required=True, help="Path to biocoreagent bixbench_report.json.")
+    parser = argparse.ArgumentParser(description="Build bio-benchmark-style chart artifacts from a SciCoreAgent BixBench report.")
+    parser.add_argument("--report", required=True, help="Path to scicore.bio bixbench_report.json.")
     parser.add_argument("--output-dir", required=True, help="Output directory for CSV, summary JSON, and HTML chart.")
     args = parser.parse_args()
     print(json.dumps(build(args.report, args.output_dir), ensure_ascii=False, indent=2))

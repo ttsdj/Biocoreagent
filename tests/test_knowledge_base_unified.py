@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import dataclasses
 
-from corecoder.knowledge_base import (
+from scicore.agent.knowledge_base import (
     KnowledgeItem,
     UnifiedKnowledgeBase,
     KnowledgeSource,

@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "name": "scicore.bio-bixbench-smoke",
+  "official_bixbench_dataset": false,
+  "description": "Small BixBench-compatible smoke suite for validating scicore.bio benchmark wiring.",
+  "tasks": [
+    {
+      "id": "inspect_count_matrix_smoke",
+      "category": "bulk_rnaseq_inspection",
+      "prompt": "Inspect this RNA-seq count matrix and report sample/gene dimensions.",
+      "fixture_dir": "bixbench_fixtures/rnaseq_small",
+      "tool": "bio_count_matrix_inspect",
+      "args": {
+        "file_path": "${workspace}/counts.tsv",
+        "max_genes": 100
+      },
+      "expect": [
+        {"path": "sample_count", "op": "equals", "value": 4},
+        {"path": "gene_count_seen", "op": "equals", "value": 3},
+        {"path": "samples[0]", "op": "equals", "value": "case_1"}
+      ]
+    },
+    {
+      "id": "welch_rnaseq_compare_smoke",
+      "category": "bulk_rnaseq_comparison",
+      "prompt": "Compare case versus control on the small count matrix with a deterministic lightweight backend.",
+      "fixture_dir": "bixbench_fixtures/rnaseq_small",
+      "tool": "bio_rnaseq_compare",
+      "args": {
+        "count_matrix_path": "${workspace}/counts.tsv",
+        "metadata_path": "${workspace}/metadata.tsv",
+        "case_group": "case",
+        "control_group": "control",
+        "group_column": "group",
+        "sample_column": "sample",
+        "top_n": 2,
+        "method": "welch"
+      },
+      "expect": [
+        {"path": "can_compare", "op": "equals", "value": true},
+        {"path": "method_used", "op": "equals", "value": "welch"},
+        {"path": "case_samples[1]", "op": "equals", "value": "case_2"},
+        {"path": "top_results[0].gene", "op": "equals", "value": "geneA"}
+      ]
+    }
+  ]
+}

@@ -8,7 +8,7 @@ Handles:
 
 Requires PROTOCOLS_IO_CLIENT_TOKEN environment variable (a valid access token).
 
-Reference: BioCoreCoder 需求文档, Section 4.2.
+Reference: SciCoreAgent 需求文档, Section 4.2.
   https://protocols.io/developers
 """
 
@@ -41,7 +41,7 @@ class ProtocolsIOClient:
         self._session.headers.update({
             "Authorization": f"Bearer {self._token}",
             "Accept": "application/json",
-            "User-Agent": "Mozilla/5.0 (compatible; BioCoreCoder/1.0)",
+            "User-Agent": "Mozilla/5.0 (compatible; SciCoreAgent/1.0)",
         })
 
     @property

@@ -1,12 +1,12 @@
 import json
 import inspect
 
-from corecoder.tools import ALL_TOOLS
+from scicore.agent.tools import ALL_TOOLS
 
-from biocoreagent.domain import EXCLUDED_LEGACY_TOOLS, build_domain_adapters
+from scicore.bio.domain import EXCLUDED_LEGACY_TOOLS, build_domain_adapters
 
 
-def test_all_retained_biocore_tool_schemas_match_execute_signatures():
+def test_all_retained_scicore_tool_schemas_match_execute_signatures():
     for tool in ALL_TOOLS:
         properties = set(tool.parameters.get("properties", {}))
         required = set(tool.parameters.get("required", []))

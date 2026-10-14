@@ -38,13 +38,13 @@ def _run(command: list[str], cwd: Path, *, allow_nonzero: bool = False) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Download BixBench-Verified-50, run BioCoreAgent, and build bio-benchmark-style chart artifacts."
+        description="Download BixBench-Verified-50, run SciCoreAgent, and build bio-benchmark-style chart artifacts."
     )
     parser.add_argument("--dataset-dir", default=r"F:\aicoding\bixbench_verified50")
     parser.add_argument("--run-dir", default=r"F:\aicoding\bixbench_runs\verified50-deepseekchat-v1")
     parser.add_argument(
         "--chart-dir",
-        default=r"D:\aicoding\00.project\biocoreagent\V3\.biocoreagent\bixbench_runs\reports\bio_benchmark_verified50",
+        default=r"D:\aicoding\00.project\scicore.bio\V3\.scicore\bixbench_runs\reports\bio_benchmark_verified50",
     )
     parser.add_argument("--provider", default="deepseek")
     parser.add_argument("--model", default="deepseek-chat")
@@ -100,13 +100,13 @@ def main(argv: list[str] | None = None) -> int:
     command = [
         sys.executable,
         "-m",
-        "corecoder.eval.bixbench",
+        "scicore.agent.eval.bixbench",
         "--official-dir",
         str(dataset_dir),
         "--official-jsonl",
         JSONL_NAME,
         "--strategy",
-        "biocoreagent_agent",
+        "scicore_bio_agent",
         "--extract-capsules",
         "--resume",
         "--max-steps",

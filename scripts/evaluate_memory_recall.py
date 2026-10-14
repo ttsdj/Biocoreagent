@@ -16,8 +16,8 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from pico.evaluation.memory_recall import evaluate_memory_recall
-from pico.features.postgres_memory import PostgresLongTermMemoryStore
+from scicore.kernel.evaluation.memory_recall import evaluate_memory_recall
+from scicore.kernel.features.postgres_memory import PostgresLongTermMemoryStore
 
 
 def load_cases(path):
@@ -80,7 +80,7 @@ def main(argv=None):
 
     store = PostgresLongTermMemoryStore.from_environment()
     if store is None:
-        parser.error("BIOCOREAGENT_MEMORY_POSTGRES_DSN must be configured")
+        parser.error("SCICORE_MEMORY_POSTGRES_DSN must be configured")
     cases = load_cases(args.cases)
     seeded = 0
     if args.corpus:

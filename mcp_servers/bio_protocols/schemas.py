@@ -1,6 +1,6 @@
 """Pydantic schemas for Protocol MCP tools.
 
-Reference: BioCoreCoder 需求文档, Section 4.2.1.
+Reference: SciCoreAgent 需求文档, Section 4.2.1.
 """
 
 from __future__ import annotations

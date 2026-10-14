@@ -1,12 +1,12 @@
 from pathlib import Path
 
-from pico.providers.clients import FakeModelClient
-from pico.run_store import RunStore
-from pico.session_store import SessionStore
-from pico.workspace import WorkspaceContext
+from scicore.kernel.providers.clients import FakeModelClient
+from scicore.kernel.run_store import RunStore
+from scicore.kernel.session_store import SessionStore
+from scicore.kernel.workspace import WorkspaceContext
 
-import corecoder.mcp_client as mcp_client
-from biocoreagent.runtime import BioPico
+import scicore.agent.mcp_client as mcp_client
+from scicore.bio.runtime import BioRuntime
 
 
 class FakeMCPProvider:
@@ -29,9 +29,9 @@ class FakeMCPProvider:
         return None
 
 
-def test_external_mcp_tool_uses_pico_approval_and_trace(tmp_path: Path, monkeypatch):
+def test_external_mcp_tool_uses_scicore_kernel_approval_and_trace(tmp_path: Path, monkeypatch):
     monkeypatch.setattr(mcp_client, "_MCP_PROVIDER", FakeMCPProvider())
-    agent = BioPico(
+    agent = BioRuntime(
         model_client=FakeModelClient(
             [
                 '<tool>{"name":"external_lookup","args":{"query":"TP53"}}</tool>',
@@ -39,8 +39,8 @@ def test_external_mcp_tool_uses_pico_approval_and_trace(tmp_path: Path, monkeypa
             ]
         ),
         workspace=WorkspaceContext.build(tmp_path),
-        session_store=SessionStore(tmp_path / ".biocoreagent" / "sessions"),
-        run_store=RunStore(tmp_path / ".biocoreagent" / "runs"),
+        session_store=SessionStore(tmp_path / ".scicore" / "sessions"),
+        run_store=RunStore(tmp_path / ".scicore" / "runs"),
         approval_policy="auto",
         role="executor",
         allow_orchestration=False,

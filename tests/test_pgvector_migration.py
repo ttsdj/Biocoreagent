@@ -1,6 +1,6 @@
 """pgvector (C2) 可选向量检索迁移的集成测试.
 
-仅在显式提供 ``BIOCOREAGENT_MEMORY_POSTGRES_DSN`` 时运行（与
+仅在显式提供 ``SCICORE_MEMORY_POSTGRES_DSN`` 时运行（与
 ``test_postgres_memory_integration.py`` 同一套 skipif 约定）。它假设该 DSN 指向
 一个带 `vector` 扩展的 Postgres（仓库 docker-compose 的 ``memory-postgres`` 服务
 用 ``pgvector/pgvector:pg15``，启动后即具备该扩展）。
@@ -21,11 +21,11 @@ import os
 
 import pytest
 
-from pico.features.postgres_memory import PostgresLongTermMemoryStore
+from scicore.kernel.features.postgres_memory import PostgresLongTermMemoryStore
 
 pytestmark = pytest.mark.skipif(
-    not os.environ.get("BIOCOREAGENT_MEMORY_POSTGRES_DSN"),
-    reason="requires BIOCOREAGENT_MEMORY_POSTGRES_DSN",
+    not os.environ.get("SCICORE_MEMORY_POSTGRES_DSN"),
+    reason="requires SCICORE_MEMORY_POSTGRES_DSN",
 )
 
 

@@ -3,22 +3,22 @@ from pathlib import Path
 
 import pytest
 
-from biocoreagent.analysis_router import route_analysis_task
-from biocoreagent.runtime import BioPico
-from pico.providers.clients import FakeModelClient
-from pico.run_store import RunStore
-from pico.session_store import SessionStore
-from pico.task_state import PHASE_TERMINATED
-from pico.tool_executor import ToolExecutor, ToolManager
-from pico.workspace import WorkspaceContext
+from scicore.bio.analysis_router import route_analysis_task
+from scicore.bio.runtime import BioRuntime
+from scicore.kernel.providers.clients import FakeModelClient
+from scicore.kernel.run_store import RunStore
+from scicore.kernel.session_store import SessionStore
+from scicore.kernel.task_state import PHASE_TERMINATED
+from scicore.kernel.tool_executor import ToolExecutor, ToolManager
+from scicore.kernel.workspace import WorkspaceContext
 
 
 def build_agent(tmp_path: Path, outputs, role="executor"):
-    return BioPico(
+    return BioRuntime(
         model_client=FakeModelClient(outputs),
         workspace=WorkspaceContext.build(tmp_path),
-        session_store=SessionStore(tmp_path / ".biocoreagent" / "sessions"),
-        run_store=RunStore(tmp_path / ".biocoreagent" / "runs"),
+        session_store=SessionStore(tmp_path / ".scicore" / "sessions"),
+        run_store=RunStore(tmp_path / ".scicore" / "runs"),
         approval_policy="auto",
         max_steps=4,
         role=role,
@@ -45,7 +45,7 @@ def test_tool_manager_is_the_single_compatible_execution_gateway(tmp_path):
     assert completed.metadata["tool_status"] == "ok"
 
 
-def test_bio_tool_runs_through_pico_loop_and_persists_run(tmp_path):
+def test_bio_tool_runs_through_scicore_kernel_loop_and_persists_run(tmp_path):
     matrix = tmp_path / "counts.csv"
     matrix.write_text("gene,s1,s2\nA,10,12\nB,4,5\n", encoding="utf-8")
     agent = build_agent(
@@ -63,8 +63,8 @@ def test_bio_tool_runs_through_pico_loop_and_persists_run(tmp_path):
     assert agent.current_task_state.phase == PHASE_TERMINATED
     assert agent.current_task_state.tool_steps == 1
     assert agent.current_task_state.last_tool == "bio_count_matrix_inspect"
-    assert (tmp_path / ".biocoreagent" / "runs" / agent.current_task_state.run_id / "trace.jsonl").exists()
-    trace_path = tmp_path / ".biocoreagent" / "runs" / agent.current_task_state.run_id / "trace.jsonl"
+    assert (tmp_path / ".scicore" / "runs" / agent.current_task_state.run_id / "trace.jsonl").exists()
+    trace_path = tmp_path / ".scicore" / "runs" / agent.current_task_state.run_id / "trace.jsonl"
     phase_events = [
         json.loads(line)["to_phase"]
         for line in trace_path.read_text(encoding="utf-8").splitlines()
@@ -81,7 +81,7 @@ def test_bio_tool_runs_through_pico_loop_and_persists_run(tmp_path):
         "finalizing",
         "terminated",
     ]
-    audit_dir = tmp_path / ".biocoreagent" / "audit" / "sessions" / agent.session["id"]
+    audit_dir = tmp_path / ".scicore" / "audit" / "sessions" / agent.session["id"]
     assert (audit_dir / "messages.jsonl").exists()
     assert (audit_dir / "tool_calls.jsonl").exists()
     assert (audit_dir / "artifacts.jsonl").exists()
@@ -105,11 +105,11 @@ def test_model_error_persists_failed_terminal_task_state_and_trace(tmp_path):
         def complete(self, prompt, max_new_tokens, **kwargs):
             raise RuntimeError("simulated model outage")
 
-    agent = BioPico(
+    agent = BioRuntime(
         model_client=FailingClient([]),
         workspace=WorkspaceContext.build(tmp_path),
-        session_store=SessionStore(tmp_path / ".biocoreagent" / "sessions"),
-        run_store=RunStore(tmp_path / ".biocoreagent" / "runs"),
+        session_store=SessionStore(tmp_path / ".scicore" / "sessions"),
+        run_store=RunStore(tmp_path / ".scicore" / "runs"),
         approval_policy="auto",
         role="executor",
         allow_orchestration=False,
@@ -121,7 +121,7 @@ def test_model_error_persists_failed_terminal_task_state_and_trace(tmp_path):
     assert agent.current_task_state.status == "failed"
     assert agent.current_task_state.phase == PHASE_TERMINATED
     assert agent.current_task_state.stop_reason == "model_error"
-    run_dir = tmp_path / ".biocoreagent" / "runs" / agent.current_task_state.run_id
+    run_dir = tmp_path / ".scicore" / "runs" / agent.current_task_state.run_id
     persisted = json.loads((run_dir / "task_state.json").read_text(encoding="utf-8"))
     assert persisted["status"] == "failed"
     assert persisted["phase"] == PHASE_TERMINATED
@@ -138,7 +138,7 @@ def test_audit_redacts_secret_tool_arguments(tmp_path):
 
     agent.execute_tool("read_file", {"path": "../outside.txt", "api_key": "sk-very-secret-token"})
 
-    audit_dir = tmp_path / ".biocoreagent" / "audit" / "sessions" / agent.session["id"]
+    audit_dir = tmp_path / ".scicore" / "audit" / "sessions" / agent.session["id"]
     text = (audit_dir / "tool_calls.jsonl").read_text(encoding="utf-8")
     assert "sk-very-secret-token" not in text
     assert "[REDACTED]" in text
@@ -190,13 +190,13 @@ def test_domain_adapter_rejects_workspace_escape(tmp_path):
     assert "path escapes workspace" in result.content
 
 
-def test_prompt_identity_is_biocoreagent_not_pico(tmp_path):
+def test_prompt_identity_is_scicore_bio_not_scicore_kernel(tmp_path):
     agent = build_agent(tmp_path, ["<final>done</final>"])
     prompt = agent.prefix_state.text
 
-    assert "You are BiocoreagentV2.0" in prompt
-    assert "user-facing identity is BioCoreAgent" in prompt
-    assert "You are pico, a small local coding agent" not in prompt
+    assert "You are SciCoreAgent" in prompt
+    assert "user-facing identity is SciCoreAgent" in prompt
+    assert "You are scicore.kernel, a small local coding agent" not in prompt
     assert "literature_red_blue_review" in prompt
 
 
@@ -218,9 +218,9 @@ def test_tool_call_with_leading_prose_is_executed(tmp_path):
 def test_explicit_remember_auto_saves_wiki(tmp_path):
     agent = build_agent(tmp_path, ["<final>Important fact saved in answer.</final>"])
 
-    agent.ask("请记住：BioCoreAgent 的文献任务需要红蓝对抗。")
+    agent.ask("请记住：SciCoreAgent 的文献任务需要红蓝对抗。")
 
-    wiki_path = tmp_path / ".biocoreagent" / "wiki" / "entries.jsonl"
+    wiki_path = tmp_path / ".scicore" / "wiki" / "entries.jsonl"
     assert wiki_path.exists()
     assert "红蓝对抗" in wiki_path.read_text(encoding="utf-8")
     assert any(event["kind"] == "wiki" for event in agent.last_auto_sedimentations)
@@ -231,7 +231,7 @@ def test_explicit_skill_request_auto_saves_skill(tmp_path):
 
     agent.ask("把这个文献调研流程沉淀为skill，以后复用。")
 
-    skills = list((tmp_path / ".biocoreagent" / "skills").glob("*.md"))
+    skills = list((tmp_path / ".scicore" / "skills").glob("*.md"))
     assert skills
     assert "Step 1 inspect evidence" in skills[0].read_text(encoding="utf-8")
     assert any(event["kind"] == "skill" for event in agent.last_auto_sedimentations)
@@ -248,7 +248,7 @@ def test_scientific_code_with_doi_auto_saves_code_literature_link(tmp_path):
 
     agent.ask("Create folding code using DOI 10.1000/fold-demo.")
 
-    path = tmp_path / ".biocoreagent" / "provenance" / "code_literature_links.jsonl"
+    path = tmp_path / ".scicore" / "provenance" / "code_literature_links.jsonl"
     assert path.exists()
     rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
     assert rows[0]["code_path"].endswith("folding_demo.py")
@@ -274,7 +274,7 @@ def test_deseq2_tissue_shortcut_prepares_workflow_without_model_loop(tmp_path):
         or "Preflight/EDA Gate failed" in result
     )
     assert "Plan artifacts:" in result
-    assert list((tmp_path / ".biocoreagent" / "plans").glob("*/plan.md"))
+    assert list((tmp_path / ".scicore" / "plans").glob("*/plan.md"))
     assert agent.current_task_state is None
 
 
@@ -312,7 +312,7 @@ def test_workflow_governance_tools_emit_preflight_ledger_and_plan(tmp_path):
             "input_files": [str(matrix)],
             "analysis_type": "deseq2",
             "target_group": "el",
-            "output_dir": str(tmp_path / ".biocoreagent" / "plans"),
+            "output_dir": str(tmp_path / ".scicore" / "plans"),
         },
     ).content)
     assert Path(plan["artifacts"]["plan_md"]).exists()

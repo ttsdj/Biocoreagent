@@ -1,12 +1,12 @@
 import json
 from pathlib import Path
 
-from pico.providers.clients import FakeModelClient
-from pico.run_store import RunStore
-from pico.session_store import SessionStore
-from pico.workspace import WorkspaceContext
+from scicore.kernel.providers.clients import FakeModelClient
+from scicore.kernel.run_store import RunStore
+from scicore.kernel.session_store import SessionStore
+from scicore.kernel.workspace import WorkspaceContext
 
-from biocoreagent.runtime import BioPico
+from scicore.bio.runtime import BioRuntime
 
 
 def test_small_rnaseq_comparison_reaches_expected_direction(tmp_path: Path):
@@ -31,11 +31,11 @@ def test_small_rnaseq_comparison_reaches_expected_direction(tmp_path: Path):
             "<final>Comparison completed and inspected.</final>",
         ]
     )
-    agent = BioPico(
+    agent = BioRuntime(
         model_client=client,
         workspace=WorkspaceContext.build(tmp_path),
-        session_store=SessionStore(tmp_path / ".biocoreagent" / "sessions"),
-        run_store=RunStore(tmp_path / ".biocoreagent" / "runs"),
+        session_store=SessionStore(tmp_path / ".scicore" / "sessions"),
+        run_store=RunStore(tmp_path / ".scicore" / "runs"),
         approval_policy="auto",
         role="bio_worker",
         allow_orchestration=False,

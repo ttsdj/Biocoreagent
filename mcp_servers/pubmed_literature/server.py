@@ -6,7 +6,7 @@ RNA-seq method extraction.
 Runs as an MCP stdio server using JSON-RPC 2.0 over stdin/stdout.
 Also supports direct CLI invocation for testing.
 
-Reference: BioCoreCoder 需求文档, Section 4.1.
+Reference: SciCoreAgent 需求文档, Section 4.1.
 """
 
 from __future__ import annotations
@@ -134,7 +134,7 @@ class PubMedServer:
     def __init__(self):
         self._email = os.environ.get("NCBI_EMAIL", "")
         self._api_key = os.environ.get("NCBI_API_KEY", "")
-        self._tool_name = os.environ.get("NCBI_TOOL", "BioCoreCoder")
+        self._tool_name = os.environ.get("NCBI_TOOL", "SciCoreAgent")
         self._last_request_time = 0.0
         self._min_interval = 1.0 / (RATE_WITH_KEY if self._api_key else RATE_NO_KEY)
 
@@ -583,8 +583,8 @@ class PubMedServer:
                             collection_name: str = "literature_review") -> dict:
         """Save articles and rows to the literature RAG store."""
         try:
-            from corecoder.bio.rag_store import default_rag_store
-            from corecoder.bio.literature_schemas import LiteratureArticle, LiteratureReviewRow
+            from scicore.agent.bio.rag_store import default_rag_store
+            from scicore.agent.bio.literature_schemas import LiteratureArticle, LiteratureReviewRow
 
             store = default_rag_store()
 
@@ -662,11 +662,11 @@ class PubMedServer:
         docx_path = None
         markdown_path = None
         try:
-            from corecoder.bio.literature_schemas import (
+            from scicore.agent.bio.literature_schemas import (
                 LiteratureReviewReport, LiteratureReviewRow,
                 MethodSummaryRow,
             )
-            from corecoder.bio.report_writer import (
+            from scicore.agent.bio.report_writer import (
                 generate_literature_review_docx,
                 generate_literature_review_markdown,
             )
@@ -720,7 +720,7 @@ class PubMedServer:
             # Convert dict rows to LiteratureReviewRow objects
             row_objects = [LiteratureReviewRow(**r) for r in rows]
             article_objects = []
-            from corecoder.bio.literature_schemas import LiteratureArticle
+            from scicore.agent.bio.literature_schemas import LiteratureArticle
             for art in articles:
                 try:
                     article_objects.append(LiteratureArticle(**art))
@@ -817,7 +817,7 @@ class PubMedServer:
         self._rate_limit()
         url = f"{NCBI_EUTILS_BASE}/{endpoint}?{urlencode(params)}"
         req = Request(url)
-        req.add_header("User-Agent", f"BioCoreCoder/1.0 (mailto:{self._email})")
+        req.add_header("User-Agent", f"SciCoreAgent/1.0 (mailto:{self._email})")
         try:
             with urlopen(req, timeout=30) as resp:
                 return resp.read().decode("utf-8")

@@ -17,5 +17,5 @@ conda run -n $EnvName python -c "import omicverse as ov; print('omicverse ok')"
 $pythonPath = (conda run -n $EnvName python -c "import sys; print(sys.executable)").Trim()
 Write-Host ""
 Write-Host "Add these lines to your .env:"
-Write-Host "BIOCOREAGENT_OMICVERSE_ENABLED=1"
-Write-Host "BIOCOREAGENT_OMICVERSE_PYTHON=$pythonPath"
+Write-Host "SCICORE_OMICVERSE_ENABLED=1"
+Write-Host "SCICORE_OMICVERSE_PYTHON=$pythonPath"

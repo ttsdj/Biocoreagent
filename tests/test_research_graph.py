@@ -1,8 +1,8 @@
-from biocoreagent.cli import build_arg_parser
-from corecoder.skill_router import SkillRoute, SkillRouter, SkillTier
-from pico.features.research_graph import ResearchGraphProjector
-from pico.memory_pipeline import MemoryPipeline
-from pico.session_store import SessionStore
+from scicore.bio.cli import build_arg_parser
+from scicore.agent.skill_router import SkillRoute, SkillRouter, SkillTier
+from scicore.kernel.features.research_graph import ResearchGraphProjector
+from scicore.kernel.memory_pipeline import MemoryPipeline
+from scicore.kernel.session_store import SessionStore
 
 
 def _decision_memory():

@@ -1,10 +1,10 @@
 import sqlite3
 
-from pico.context_manager import ContextManager
-from pico.features.memory import LayeredMemory
-from pico.session_store import SessionStore
-from corecoder.sedimentation import DREAM_STAGES, DreamSedimentationManager, SedimentationReviewer
-from corecoder.skills import read_skill
+from scicore.kernel.context_manager import ContextManager
+from scicore.kernel.features.memory import LayeredMemory
+from scicore.kernel.session_store import SessionStore
+from scicore.agent.sedimentation import DREAM_STAGES, DreamSedimentationManager, SedimentationReviewer
+from scicore.agent.skills import read_skill
 
 
 def test_session_store_uses_sqlite_and_keeps_json_mirror(tmp_path):
@@ -45,7 +45,7 @@ def test_durable_memory_hybrid_retrieval_returns_source_backlink(tmp_path):
     assert results[0]["retrieval"]["method"] == "rrf_bm25_dense_hash"
     assert results[0]["source"].endswith("project-conventions.md")
     assert results[0]["source_anchor"].startswith("sha256:")
-    assert (tmp_path / ".pico" / "memory" / "memory.sqlite").exists()
+    assert (tmp_path / ".scicore/kernel" / "memory" / "memory.sqlite").exists()
 
 
 class _ContextAgent:
@@ -122,9 +122,9 @@ def test_background_review_creates_and_versions_draft_skill(tmp_path):
     assert updated[0]["action"] == "updated"
     assert updated[0]["version"] == 2
     assert list(
-        (tmp_path / ".biocoreagent" / "skills" / ".history" / "learned-bulk-rnaseq").glob("v1_*.md")
+        (tmp_path / ".scicore" / "skills" / ".history" / "learned-bulk-rnaseq").glob("v1_*.md")
     )
-    assert (tmp_path / ".biocoreagent" / "wiki" / "entries.jsonl").exists()
+    assert (tmp_path / ".scicore" / "wiki" / "entries.jsonl").exists()
 
 
 def test_background_review_does_not_learn_from_failure(tmp_path):
@@ -158,7 +158,7 @@ def test_dream_queue_is_async_durable_and_tracks_five_stages(tmp_path):
         assert set(completed["stages"].values()) == {"completed"}
         assert (
             tmp_path
-            / ".biocoreagent"
+            / ".scicore"
             / "sedimentation"
             / "dream"
             / "jobs"

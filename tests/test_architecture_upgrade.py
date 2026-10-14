@@ -9,16 +9,16 @@ from types import SimpleNamespace
 import pytest
 from pydantic import ValidationError
 
-from biocoreagent.analysis_router import AnalysisRoute
-from biocoreagent.capabilities import default_capability_registry
-from biocoreagent.orchestrator import AsyncMultiAgentOrchestrator
-from biocoreagent.runtime import BioPico
-from biocoreagent.workflow_ir import FinalSynthesis, WorkflowManifest, WorkflowManifestStore
-from pico.features.memory import LayeredMemory
-from pico.providers.clients import FakeModelClient
-from pico.run_store import RunStore
-from pico.session_store import SessionStore
-from pico.workspace import WorkspaceContext
+from scicore.bio.analysis_router import AnalysisRoute
+from scicore.bio.capabilities import default_capability_registry
+from scicore.bio.orchestrator import AsyncMultiAgentOrchestrator
+from scicore.bio.runtime import BioRuntime
+from scicore.bio.workflow_ir import FinalSynthesis, WorkflowManifest, WorkflowManifestStore
+from scicore.kernel.features.memory import LayeredMemory
+from scicore.kernel.providers.clients import FakeModelClient
+from scicore.kernel.run_store import RunStore
+from scicore.kernel.session_store import SessionStore
+from scicore.kernel.workspace import WorkspaceContext
 
 
 def test_workflow_ir_rejects_missing_fields_and_unverified_completion(tmp_path):
@@ -70,11 +70,11 @@ def test_capability_contract_downgrades_missing_artifacts():
 def test_controlled_analysis_persists_verified_workflow_manifest(tmp_path):
     table = tmp_path / "protein_intensity.csv"
     table.write_text("protein,el1,el2\nP1,10,12\n", encoding="utf-8")
-    agent = BioPico(
+    agent = BioRuntime(
         model_client=FakeModelClient([]),
         workspace=WorkspaceContext.build(tmp_path),
-        session_store=SessionStore(tmp_path / ".biocoreagent" / "sessions"),
-        run_store=RunStore(tmp_path / ".biocoreagent" / "runs"),
+        session_store=SessionStore(tmp_path / ".scicore" / "sessions"),
+        run_store=RunStore(tmp_path / ".scicore" / "runs"),
         approval_policy="auto",
         role="executor",
         allow_orchestration=False,
@@ -82,7 +82,7 @@ def test_controlled_analysis_persists_verified_workflow_manifest(tmp_path):
 
     agent.ask(f'"{table}" run proteomics analysis')
 
-    manifests = list((tmp_path / ".biocoreagent" / "workflows").glob("*/manifest.json"))
+    manifests = list((tmp_path / ".scicore" / "workflows").glob("*/manifest.json"))
     assert len(manifests) == 1
     manifest = WorkflowManifest.model_validate_json(manifests[0].read_text(encoding="utf-8"))
     assert manifest.route.analysis_type == "proteomics"

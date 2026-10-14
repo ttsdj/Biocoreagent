@@ -6,9 +6,7 @@ ENV PYTHONUNBUFFERED=1
 WORKDIR /app
 
 COPY pyproject.toml README.md LICENSE ./
-COPY biocoreagent ./biocoreagent
-COPY pico ./pico
-COPY corecoder ./corecoder
+COPY scicore ./scicore
 COPY mcp_servers ./mcp_servers
 
 RUN python -m pip install --upgrade pip \
@@ -16,5 +14,5 @@ RUN python -m pip install --upgrade pip \
 
 WORKDIR /workspace
 
-ENTRYPOINT ["biocoreagent-v2"]
+ENTRYPOINT ["scicore"]
 CMD ["--help"]

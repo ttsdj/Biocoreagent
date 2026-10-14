@@ -2,7 +2,7 @@
 
 关键点：这 100 条**不是**把 Scorecard 的 100 分满分当成“100 条用例”，而是：
 - 生成器（scripts/generate_replay_case_suite.py）原子性地产出 100 个 ready case；
-- 每条 case 的 fake_outputs.json 会真实驱动 Pico 工具循环（list_files / read_file /
+- 每条 case 的 fake_outputs.json 会真实驱动 kernel 工具循环（list_files / read_file /
   search / write_file），真的在 workspace 里产生可验证产物；
 - 用 `run_suite_deterministic` 跑完后，scorecard 的通过数与用例总数一致、可复现。
 
@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pytest
 
-from biocoreagent.replay import lint_case, run_suite_deterministic
+from scicore.bio.replay import lint_case, run_suite_deterministic
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SUITE_DIR = REPO_ROOT / "benchmarks" / "replay_cases" / "engineering"

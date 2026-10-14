@@ -1,4 +1,4 @@
-"""Generate reproducible evidence for BioCoreAgent resume claims."""
+"""Generate reproducible evidence for SciCoreAgent resume claims."""
 
 from __future__ import annotations
 
@@ -15,19 +15,19 @@ if str(REPO_ROOT) in sys.path:
     sys.path.remove(str(REPO_ROOT))
 sys.path.insert(0, str(REPO_ROOT))
 
-from biocoreagent.orchestrator import AsyncMultiAgentOrchestrator
-from biocoreagent.runtime import BioPico
-from pico.context_manager import ContextManager
-from pico.features.memory import LayeredMemory
-from pico.providers.clients import FakeModelClient
-from pico.run_store import RunStore
-from pico.session_store import SessionStore
-from pico.workspace import WorkspaceContext
+from scicore.bio.orchestrator import AsyncMultiAgentOrchestrator
+from scicore.bio.runtime import BioRuntime
+from scicore.kernel.context_manager import ContextManager
+from scicore.kernel.features.memory import LayeredMemory
+from scicore.kernel.providers.clients import FakeModelClient
+from scicore.kernel.run_store import RunStore
+from scicore.kernel.session_store import SessionStore
+from scicore.kernel.workspace import WorkspaceContext
 
 
 ARTIFACT_PATH = REPO_ROOT / "artifacts" / "resume-metrics-v1.json"
-REPORT_PATH = REPO_ROOT / "docs" / "metrics" / "biocoreagent-resume-evidence.md"
-WORK_ROOT = REPO_ROOT / ".biocoreagent" / "benchmarks" / "resume_metrics"
+REPORT_PATH = REPO_ROOT / "docs" / "metrics" / "scicore.bio-resume-evidence.md"
+WORK_ROOT = REPO_ROOT / ".scicore" / "benchmarks" / "resume_metrics"
 
 
 @dataclass
@@ -52,7 +52,7 @@ class _SleepAgent:
 class _ContextAgent:
     def __init__(self, root: Path, case_index: int):
         self.prefix = (
-            "BioCoreAgent stable system rules and tool contracts.\n"
+            "SciCoreAgent stable system rules and tool contracts.\n"
             + (f"prefix-{case_index}-" * 100)
         )
         self.session = {"history": []}
@@ -303,11 +303,11 @@ def benchmark_multiagent(root: Path) -> dict:
 
 def inventory_runtime(root: Path) -> dict:
     root.mkdir(parents=True, exist_ok=True)
-    agent = BioPico(
+    agent = BioRuntime(
         model_client=FakeModelClient(["<final>inventory</final>"]),
         workspace=WorkspaceContext.build(root),
-        session_store=SessionStore(root / ".biocoreagent" / "sessions"),
-        run_store=RunStore(root / ".biocoreagent" / "runs"),
+        session_store=SessionStore(root / ".scicore" / "sessions"),
+        run_store=RunStore(root / ".scicore" / "runs"),
         approval_policy="auto",
         role="executor",
         allow_orchestration=False,
@@ -354,7 +354,7 @@ def build_report(payload: dict) -> str:
     inventory = payload["inventory"]
     return "\n".join(
         [
-            "# BioCoreAgent Resume Evidence",
+            "# SciCoreAgent Resume Evidence",
             "",
             f"- Generated at: `{payload['generated_at']}`",
             f"- Git commit: `{payload['git_commit']}`",
@@ -393,7 +393,7 @@ def build_report(payload: dict) -> str:
                 f"{inventory['analysis_route_count']} deterministic analysis routes."
             ),
             (
-                f"- BixBench Verified-50: initial BioCoreAgent run "
+                f"- BixBench Verified-50: initial SciCoreAgent run "
                 f"{bix['initial']['passed']}/50 ({bix['initial']['pass_at_1']:.1%}) -> "
                 f"best verified run {bix['best']['passed']}/50 "
                 f"({bix['best']['pass_at_1']:.1%}), "
@@ -405,7 +405,7 @@ def build_report(payload: dict) -> str:
             "- Memory metrics are a controlled retrieval correctness suite with explicit markers; they are not an open-domain semantic QA score.",
             "- Context correctness means current-request/latest-evidence retention and budget compliance, not LLM answer accuracy.",
             "- BixBench uses the local runner's direct/local verifier. No official external LLM judge score is claimed.",
-            "- The Verified-50 baseline is the initial BioCoreAgent run, not a raw foundation-model score.",
+            "- The Verified-50 baseline is the initial SciCoreAgent run, not a raw foundation-model score.",
             "",
             "## Evidence Files",
             "",

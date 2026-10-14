@@ -2,7 +2,7 @@
 .env.*
 !.env.example
 .git
-.biocoreagent
+.scicore
 .tmp
 .verify*
 .test-tmp*

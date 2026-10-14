@@ -5,7 +5,7 @@ RAG storage/querying.
 
 Runs as an MCP stdio server using JSON-RPC 2.0 over stdin/stdout.
 
-Reference: BioCoreCoder 需求文档, Section 4.2.
+Reference: SciCoreAgent 需求文档, Section 4.2.
 """
 
 from __future__ import annotations
@@ -217,8 +217,8 @@ class ProtocolServer:
         protocols_ingested = []
 
         try:
-            from corecoder.bio.rag_store import default_rag_store
-            from corecoder.bio.protocol_schemas import BioProtocolRecord, ProtocolEvidence
+            from scicore.agent.bio.rag_store import default_rag_store
+            from scicore.agent.bio.protocol_schemas import BioProtocolRecord, ProtocolEvidence
 
             store = default_rag_store()
 
@@ -297,8 +297,8 @@ class ProtocolServer:
         # Step 4: Generate collection report
         report_path = ""
         try:
-            from corecoder.bio.report_writer import generate_protocol_collection_markdown
-            from corecoder.bio.protocol_schemas import ProtocolCollectionRunReport
+            from scicore.agent.bio.report_writer import generate_protocol_collection_markdown
+            from scicore.agent.bio.protocol_schemas import ProtocolCollectionRunReport
 
             # Compute field completeness
             field_stats = self._compute_field_completeness(protocols_ingested)
@@ -377,7 +377,7 @@ class ProtocolServer:
     def protocol_query_rag(self, query: str, top_k: int = 10) -> dict:
         """Query the protocol RAG store."""
         try:
-            from corecoder.bio.rag_store import default_rag_store
+            from scicore.agent.bio.rag_store import default_rag_store
             store = default_rag_store()
             results = store.search_protocols(query=query, top_k=top_k)
 

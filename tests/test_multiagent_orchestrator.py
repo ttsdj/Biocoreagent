@@ -6,12 +6,12 @@ from types import SimpleNamespace
 
 import pytest
 
-from biocoreagent.lifecycle import (
+from scicore.bio.lifecycle import (
     LifecycleTransitionError,
     ensure_job_transition,
     ensure_team_transition,
 )
-from biocoreagent.orchestrator import (
+from scicore.bio.orchestrator import (
     LIFECYCLE_STATES,
     AgentJob,
     AgentTeam,
@@ -20,12 +20,12 @@ from biocoreagent.orchestrator import (
     ReplanNode,
     ReplanPatch,
 )
-from biocoreagent.runtime import BioPico
-from pico.providers.clients import FakeModelClient
-from pico.run_store import RunStore
-from pico.session_store import SessionStore
-from pico.task_state import TaskState
-from pico.workspace import WorkspaceContext
+from scicore.bio.runtime import BioRuntime
+from scicore.kernel.providers.clients import FakeModelClient
+from scicore.kernel.run_store import RunStore
+from scicore.kernel.session_store import SessionStore
+from scicore.kernel.task_state import TaskState
+from scicore.kernel.workspace import WorkspaceContext
 
 
 def build_factory(tmp_path: Path, prompts: dict[str, list[str]]):
@@ -33,11 +33,11 @@ def build_factory(tmp_path: Path, prompts: dict[str, list[str]]):
         client = FakeModelClient([f"<final>{role} completed</final>"])
         prompts.setdefault(role, []).append(client)
         root = worker_workspace or tmp_path
-        return BioPico(
+        return BioRuntime(
             model_client=client,
             workspace=WorkspaceContext.build(root),
-            session_store=SessionStore(root / ".biocoreagent" / "sessions"),
-            run_store=RunStore(root / ".biocoreagent" / "runs"),
+            session_store=SessionStore(root / ".scicore" / "sessions"),
+            run_store=RunStore(root / ".scicore" / "runs"),
             approval_policy="auto",
             role=role,
             orchestrator=None,
@@ -75,7 +75,7 @@ def test_team_runs_independent_agents_and_persists_state(tmp_path):
         assert all([item["to_status"] for job in status["jobs"] for item in job["transitions"]])
         assert any(item["kind"] == "team_synthesis" for item in status["artifacts"])
         assert "All assigned agents completed" in status["synthesis"]
-        audit_dir = tmp_path / ".biocoreagent" / "audit" / "sessions" / "multiagent"
+        audit_dir = tmp_path / ".scicore" / "audit" / "sessions" / "multiagent"
         assert (audit_dir / "state_transitions.jsonl").exists()
         assert (audit_dir / "artifacts.jsonl").exists()
         assert (audit_dir / "audit_index.json").exists()
@@ -187,11 +187,11 @@ def test_completed_child_result_is_reinjected_once_into_parent_session(tmp_path)
         max_concurrency=1,
     )
     try:
-        parent = BioPico(
+        parent = BioRuntime(
             model_client=FakeModelClient(["<final>parent</final>"]),
             workspace=WorkspaceContext.build(tmp_path),
-            session_store=SessionStore(tmp_path / ".biocoreagent" / "parent-sessions"),
-            run_store=RunStore(tmp_path / ".biocoreagent" / "parent-runs"),
+            session_store=SessionStore(tmp_path / ".scicore" / "parent-sessions"),
+            run_store=RunStore(tmp_path / ".scicore" / "parent-runs"),
             approval_policy="auto",
             role="executor",
             orchestrator=manager,
@@ -242,11 +242,11 @@ def test_cancel_queued_job_and_retry_terminal_job(tmp_path):
             return super().complete(prompt, max_new_tokens, **kwargs)
 
     def factory(role, worker):
-        return BioPico(
+        return BioRuntime(
             model_client=SlowClient([f"<final>{role} done</final>"]),
             workspace=WorkspaceContext.build(tmp_path),
-            session_store=SessionStore(tmp_path / ".biocoreagent" / "sessions"),
-            run_store=RunStore(tmp_path / ".biocoreagent" / "runs"),
+            session_store=SessionStore(tmp_path / ".scicore" / "sessions"),
+            run_store=RunStore(tmp_path / ".scicore" / "runs"),
             approval_policy="auto",
             role=role,
             allow_orchestration=False,
@@ -305,11 +305,11 @@ def test_root_orchestration_tools_require_approval(tmp_path):
     holder = {}
 
     def factory(role, worker):
-        return BioPico(
+        return BioRuntime(
             model_client=FakeModelClient(["<final>done</final>"]),
             workspace=WorkspaceContext.build(tmp_path),
-            session_store=SessionStore(tmp_path / ".biocoreagent" / "sessions"),
-            run_store=RunStore(tmp_path / ".biocoreagent" / "runs"),
+            session_store=SessionStore(tmp_path / ".scicore" / "sessions"),
+            run_store=RunStore(tmp_path / ".scicore" / "runs"),
             approval_policy="auto",
             role=role,
             orchestrator=holder.get("manager"),
@@ -369,11 +369,11 @@ def test_single_worker_timeout_is_classified_as_level_one_degradation(tmp_path):
 
     def factory(role, worker, worker_workspace=None):
         root = worker_workspace or tmp_path
-        return BioPico(
+        return BioRuntime(
             model_client=SlowClient([]),
             workspace=WorkspaceContext.build(root),
-            session_store=SessionStore(root / ".biocoreagent" / "sessions"),
-            run_store=RunStore(root / ".biocoreagent" / "runs"),
+            session_store=SessionStore(root / ".scicore" / "sessions"),
+            run_store=RunStore(root / ".scicore" / "runs"),
             approval_policy="auto",
             role=role,
             allow_orchestration=False,
@@ -423,11 +423,11 @@ def test_batch_failure_triggers_dynamic_replan_and_degraded_synthesis(tmp_path):
             if role == "explorer"
             else FakeModelClient([f"<final>{role} recovered evidence</final>"])
         )
-        return BioPico(
+        return BioRuntime(
             model_client=client,
             workspace=WorkspaceContext.build(root),
-            session_store=SessionStore(root / ".biocoreagent" / "sessions"),
-            run_store=RunStore(root / ".biocoreagent" / "runs"),
+            session_store=SessionStore(root / ".scicore" / "sessions"),
+            run_store=RunStore(root / ".scicore" / "runs"),
             approval_policy="auto",
             role=role,
             allow_orchestration=False,
@@ -485,11 +485,11 @@ def test_dynamic_replan_applies_a_validated_multi_node_dag_patch(tmp_path):
             else FakeModelClient([f"<final>{role} patch evidence</final>"])
         )
         prompts.setdefault(role, []).append(client)
-        return BioPico(
+        return BioRuntime(
             model_client=client,
             workspace=WorkspaceContext.build(root),
-            session_store=SessionStore(root / ".biocoreagent" / "sessions"),
-            run_store=RunStore(root / ".biocoreagent" / "runs"),
+            session_store=SessionStore(root / ".scicore" / "sessions"),
+            run_store=RunStore(root / ".scicore" / "runs"),
             approval_policy="auto",
             role=role,
             allow_orchestration=False,
@@ -555,11 +555,11 @@ def test_invalid_replan_patch_is_rejected_and_audited(tmp_path):
             if role == "explorer"
             else FakeModelClient(["<final>available evidence</final>"])
         )
-        return BioPico(
+        return BioRuntime(
             model_client=client,
             workspace=WorkspaceContext.build(root),
-            session_store=SessionStore(root / ".biocoreagent" / "sessions"),
-            run_store=RunStore(root / ".biocoreagent" / "runs"),
+            session_store=SessionStore(root / ".scicore" / "sessions"),
+            run_store=RunStore(root / ".scicore" / "runs"),
             approval_policy="auto",
             role=role,
             allow_orchestration=False,
@@ -608,11 +608,11 @@ def test_global_timeout_forces_partial_synthesis(tmp_path):
 
     def factory(role, worker, worker_workspace=None):
         root = worker_workspace or tmp_path
-        return BioPico(
+        return BioRuntime(
             model_client=SlowClient([]),
             workspace=WorkspaceContext.build(root),
-            session_store=SessionStore(root / ".biocoreagent" / "sessions"),
-            run_store=RunStore(root / ".biocoreagent" / "runs"),
+            session_store=SessionStore(root / ".scicore" / "sessions"),
+            run_store=RunStore(root / ".scicore" / "runs"),
             approval_policy="auto",
             role=role,
             allow_orchestration=False,

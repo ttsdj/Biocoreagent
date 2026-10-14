@@ -8,7 +8,7 @@
     "read-only"
   ],
   "input": {
-    "prompt": "Reply with exactly: BioCoreAgent replay OK"
+    "prompt": "Reply with exactly: SciCoreAgent replay OK"
   },
   "fixtures": [],
   "runtime": {
@@ -22,7 +22,7 @@
   "verification": {
     "final_nonempty": true,
     "final_contains": [
-      "BioCoreAgent replay OK"
+      "SciCoreAgent replay OK"
     ],
     "final_regex": [],
     "expected_files": [],

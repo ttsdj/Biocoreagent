@@ -3,8 +3,8 @@ from pathlib import Path
 
 import pytest
 
-from pico.evaluation.research_graph import evaluate_research_graph
-from pico.features.research_graph import ResearchGraphProjector
+from scicore.kernel.evaluation.research_graph import evaluate_research_graph
+from scicore.kernel.features.research_graph import ResearchGraphProjector
 from scripts.evaluate_research_graph import load_cases, main
 
 ROOT = Path(__file__).resolve().parents[1]

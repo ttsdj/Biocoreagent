@@ -16,13 +16,13 @@ import tempfile
 
 import pytest
 
-from pico.session_store import SessionStore
+from scicore.kernel.session_store import SessionStore
 
 
 @pytest.fixture
 def chunk_root():
     """一个干净的临时目录，避开 pytest 的 basetemp 权限问题。"""
-    root = tempfile.mkdtemp(prefix="biocoreagent-chunks-")
+    root = tempfile.mkdtemp(prefix="scicore.bio-chunks-")
     try:
         yield root
     finally:

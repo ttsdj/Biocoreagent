@@ -4,14 +4,14 @@ import os
 
 import pytest
 
-from pico.features.postgres_memory import PostgresLongTermMemoryStore
-from pico.memory_pipeline import MemoryPipeline
-from pico.session_store import SessionStore
+from scicore.kernel.features.postgres_memory import PostgresLongTermMemoryStore
+from scicore.kernel.memory_pipeline import MemoryPipeline
+from scicore.kernel.session_store import SessionStore
 
 
 @pytest.mark.skipif(
-    not os.environ.get("BIOCOREAGENT_MEMORY_POSTGRES_DSN"),
-    reason="requires BIOCOREAGENT_MEMORY_POSTGRES_DSN",
+    not os.environ.get("SCICORE_MEMORY_POSTGRES_DSN"),
+    reason="requires SCICORE_MEMORY_POSTGRES_DSN",
 )
 def test_postgres_memory_hybrid_retrieval_and_scope_isolation():
     store = PostgresLongTermMemoryStore.from_environment()
@@ -57,8 +57,8 @@ def test_postgres_memory_hybrid_retrieval_and_scope_isolation():
 
 
 @pytest.mark.skipif(
-    not os.environ.get("BIOCOREAGENT_MEMORY_POSTGRES_DSN"),
-    reason="requires BIOCOREAGENT_MEMORY_POSTGRES_DSN",
+    not os.environ.get("SCICORE_MEMORY_POSTGRES_DSN"),
+    reason="requires SCICORE_MEMORY_POSTGRES_DSN",
 )
 def test_session_chunk_outbox_to_postgres_to_retrieval(tmp_path):
     store = SessionStore(tmp_path / "sessions")
@@ -102,8 +102,8 @@ def test_session_chunk_outbox_to_postgres_to_retrieval(tmp_path):
 
 
 @pytest.mark.skipif(
-    not os.environ.get("BIOCOREAGENT_MEMORY_POSTGRES_DSN"),
-    reason="requires BIOCOREAGENT_MEMORY_POSTGRES_DSN",
+    not os.environ.get("SCICORE_MEMORY_POSTGRES_DSN"),
+    reason="requires SCICORE_MEMORY_POSTGRES_DSN",
 )
 def test_postgres_research_graph_timeline_and_evidence():
     store = PostgresLongTermMemoryStore.from_environment()

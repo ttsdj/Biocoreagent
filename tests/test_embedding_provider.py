@@ -1,7 +1,7 @@
 """语义嵌入双档 (C1) 的测试.
 
 对应简历「语义嵌入」声明。真实处境：默认是**确定性的哈希嵌入**（离线、可复现），
-只有显式设置 ``BIOCOREAGENT_EMBEDDING_BACKEND=sentence-transformers`` 并安装
+只有显式设置 ``SCICORE_EMBEDDING_BACKEND=sentence-transformers`` 并安装
 sentence-transformers 后才启用真实语义模型。这个测试用 monkeypatch 把重量级
 模型替换成桩，拿住「选型由环境变量决定」这个契约，不会在 CI 里联网加载模型。
 
@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import math
 
-from pico.features import postgres_memory
+from scicore.kernel.features import postgres_memory
 
 
 class _FakeVector:
@@ -46,8 +46,8 @@ def _fake_loader(model_name):
 
 
 def test_default_provider_is_dense_hash_fallback(monkeypatch):
-    monkeypatch.delenv("BIOCOREAGENT_EMBEDDING_BACKEND", raising=False)
-    monkeypatch.delenv("BIOCOREAGENT_EMBEDDING_MODEL", raising=False)
+    monkeypatch.delenv("SCICORE_EMBEDDING_BACKEND", raising=False)
+    monkeypatch.delenv("SCICORE_EMBEDDING_MODEL", raising=False)
     provider = postgres_memory.embedding_provider_from_environment()
     assert isinstance(provider, postgres_memory.EmbeddingProvider)
     assert provider.name == "dense_hash_fallback"
@@ -90,8 +90,8 @@ def test_environment_selects_sentence_transformers(monkeypatch):
     monkeypatch.setattr(
         postgres_memory, "_load_sentence_transformer", _fake_loader
     )
-    monkeypatch.setenv("BIOCOREAGENT_EMBEDDING_BACKEND", "sentence-transformers")
-    monkeypatch.delenv("BIOCOREAGENT_EMBEDDING_MODEL", raising=False)
+    monkeypatch.setenv("SCICORE_EMBEDDING_BACKEND", "sentence-transformers")
+    monkeypatch.delenv("SCICORE_EMBEDDING_MODEL", raising=False)
     provider = postgres_memory.embedding_provider_from_environment()
     assert isinstance(provider, postgres_memory.SentenceTransformerEmbeddingProvider)
     assert provider.name.startswith("sentence_transformers:")

@@ -14,8 +14,8 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from pico.evaluation.research_graph import evaluate_research_graph
-from pico.features.research_graph import ResearchGraphProjector
+from scicore.kernel.evaluation.research_graph import evaluate_research_graph
+from scicore.kernel.features.research_graph import ResearchGraphProjector
 
 
 def file_sha256(path):

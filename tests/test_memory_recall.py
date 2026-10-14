@@ -1,4 +1,4 @@
-from pico.evaluation.memory_recall import evaluate_memory_recall
+from scicore.kernel.evaluation.memory_recall import evaluate_memory_recall
 
 
 def test_memory_recall_reports_hitrate_mrr_and_scope_leakage():

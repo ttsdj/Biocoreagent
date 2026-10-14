@@ -3,7 +3,7 @@
 Defines input/output validation for all MCP tools exposed by the
 pubmed_literature MCP server.
 
-Reference: BioCoreCoder 需求文档, Section 4.1.1.
+Reference: SciCoreAgent 需求文档, Section 4.1.1.
 """
 
 from __future__ import annotations
