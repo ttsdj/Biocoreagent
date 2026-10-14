@@ -42,6 +42,8 @@ data/
 results/
 note.txt
 proteomics_fallback_*/
+_archive/
 docs/biocore-v1/
 docs/
 tests/biocore_legacy/
+artifacts/

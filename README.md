@@ -156,19 +156,17 @@ biocoreagent/                   拼装与审计层
 
 ## 已验证结果与边界
 
-下表是仓库当前保存的工程资格测试结果，不是未经限定的生产效果宣传。
+仓库通过工程资格测试与确定性回放套件做回归验证；具体指标数字不在仓库文档中展示，需要时可在本地按“评测与测试”一节的命令复现后自行核对。
 
-| 项目 | 结果 | 测试边界与证据 |
-|---|---:|---|
-| 当前全量测试（非 slow） | 301 passed，12 skipped，1 deselected | 仓库内可复跑：`python -m pytest -q -m "not slow" --basetemp $(mktemp -d)`（Windows 下需一个干净 basetemp 绕过系统临时目录权限）；12 个跳过均为条件性集成测试（7 个 live-MCP、2 个 pgvector、3 个 Postgres，无 DSN/标志时跳过）；1 个 deselected 为 slow 的 100 条 Replay 套件，单独跑 `-m slow`；命令见“评测与测试” |
-| 固定 Harness 回归 | 14/14 通过；预算合规与 artifact verifier 均为 100% | FakeModelClient 确定性任务集；[原始 JSON](artifacts/harness-regression-v2.json) |
-| Replay Smoke 套件 | 100 条工程回归用例通过率 100%，安全硬门槛全过 | 由生成器固化的 `benchmarks/replay_cases/engineering/`（100 个 case）；生成器为唯一真值来源；复现命令见“评测与测试” |
-| 长上下文压缩 | 15 组：平均输入 26,928 字符、平均输出 1,795 字符；**各组**压缩比（1−out/in）平均 92.95%、最高 95.23% | 当前请求、最新证据保留率及预算合规率均为 100%；92.95% 是**各组比值**的平均，不是用「1−均值比 1795/26928」得出的 93.33%（若那样算约为 93.33%）；保留率/预算指上下文裁剪正确性，不是 LLM 答案正确率；[证据](artifacts/resume-metrics-v1.json) |
-| 多 Agent 调度 | 8 Worker、并发 4 相对串行约 2.40× 端到端加速 | 250 ms 合成 Worker，包含状态、审计和 Artifact I/O；不能外推为真实模型任务固定加速比；[证据](artifacts/resume-metrics-v1.json) |
-| 长期记忆召回 | HitRate@10 100%，MRR@10 1.000，scope leakage 0 | 真实 Postgres + all-MiniLM-L6-v2 上的 200 条冻结合成命名实体资格集；阈值为 99.4% / 0.67；不代表真实用户或开放域问答；[原始 JSON](artifacts/memory-recall-synthetic-v1.json) |
-| Research Graph | 8 个冻结策划场景，资格分 100/100 | 仅验证策划工程场景，不代表开放域抽取效果；[原始 JSON](artifacts/research-graph-curated-v1.json) |
-| 知识能力单元（C4/C1/C3） | 统一知识库`cross_search`/`cross_enhance`/`suggest_skill_from_wiki`、语义嵌入双档、会话语义切块共 19 项单元测试 | 全部纯离线可跑，不依赖模型、网络或 Postgres；`strategy="semantic"` 与 `sentence-transformers` 均为可选禁用无副作用；命令见“评测与测试” |
-| BixBench Verified-50 | 初版 22/50（44%）→ 最佳 38/50（76%），+32pp | 两次历史仓库外 run（本地 direct verifier；未运行官方外部 LLM judge）。当前环境无 HF token，仓库内不可复跑；原始报告在仓库外。口径见 [工作流与边界](docs/verified50_benchmark_workflow.md#历史出分与可复现性说明) |
+- 当前全量测试（非 slow）：仓库内可复跑；跳过项均为条件性集成测试（live-MCP、pgvector、Postgres，无 DSN/标志时跳过）；slow 标记的确定性回放套件单独执行，命令见“评测与测试”。
+- 固定 Harness 回归：FakeModelClient 确定性任务集，本地可复跑，覆盖预算合规与 artifact verifier。
+- Replay Smoke 套件：由生成器固化的 `benchmarks/replay_cases/engineering/` 工程回归用例；生成器为唯一真值来源，安全硬门槛随套件执行。
+- 长上下文压缩：在冻结用例集上验证各组压缩比、当前请求/最新证据保留率与预算合规；度量的是上下文裁剪正确性，不是 LLM 答案正确率。
+- 多 Agent 调度：以合成 Worker 对比串行与并发的端到端耗时；不能外推为真实模型任务的固定加速比。
+- 长期记忆召回：在真实 Postgres 上用冻结合成命名实体资格集验证 HitRate、MRR 与 scope leakage；不代表真实用户或开放域问答。
+- Research Graph：冻结策划场景的资格评测，仅验证策划工程场景，不代表开放域抽取效果。
+- 知识能力单元（C4/C1/C3）：统一知识库 `cross_search`/`cross_enhance`/`suggest_skill_from_wiki`、语义嵌入双档、会话语义切块的单元测试；全部纯离线可跑，不依赖模型、网络或 Postgres。
+- BixBench Verified-50：历史 run 在仓库外完成，仓库内不可复跑；口径见 [工作流与边界](docs/verified50_benchmark_workflow.md#历史出分与可复现性说明)。
 
 完整口径、复现命令和禁止使用的夸大表述见 [工程证据说明](docs/metrics/biocoreagent-resume-evidence.md) 与 [目标完成审计](docs/resume/goal_completion_audit.md)。
 
@@ -313,7 +311,7 @@ python scripts\generate_replay_case_suite.py          # 重建 benchmarks/replay
 biocore-replay run benchmarks\replay_cases\engineering --output-root .biocoreagent\replay_runs\smoke100
 ~~~
 
-上面 `run` 对目录套件会自动检测「每条 case 自带 fake_outputs.json」并走 `run_suite_deterministic`，逐条用其自身的确定性输出驱动工具、真的在 workspace 产生产物并被 verifier 检查；scorecard 的 `passed == 100` 字面成立。相应测试 `tests/test_replay_smoke_100.py`（`--run slow` 才跑全套）。
+上面 `run` 对目录套件会自动检测「每条 case 自带 fake_outputs.json」并走 `run_suite_deterministic`，逐条用其自身的确定性输出驱动工具、真的在 workspace 产生产物并被 verifier 检查；跑完 scorecard 需全部用例通过。相应测试 `tests/test_replay_smoke_100.py`（`--run slow` 才跑全套）。
 
 知识能力强化（C4 统一知识库 / C1 语义嵌入双档 / C3 语义切块）的单元测试，纯离线可跑：
 
@@ -330,7 +328,7 @@ python scripts\evaluate_research_graph.py benchmarks\research_graph\curated-v1\c
 python scripts\evaluate_memory_recall.py benchmarks\memory_recall\synthetic-v1\frozen.jsonl --corpus benchmarks\memory_recall\synthetic-v1\corpus.jsonl --output artifacts\memory-recall-synthetic-v1.json
 ~~~
 
-`evaluate_research_graph.py` 无外部服务依赖，可用仓库自带场景直接跑；`evaluate_memory_recall.py` 需配置 Postgres 长期记忆（见“可选 Postgres 长期记忆”）。注意仓库有两套记忆召回数字（本地 40 条 / Postgres 200 条，语义不同），口径见 [声明证据对照表](docs/claim_evidence_ledger.md)。
+`evaluate_research_graph.py` 无外部服务依赖，可用仓库自带场景直接跑；`evaluate_memory_recall.py` 需配置 Postgres 长期记忆（见“可选 Postgres 长期记忆”）。注意仓库有两套记忆召回评测集（本地与 Postgres，规模与语义不同），口径见 [声明证据对照表](docs/claim_evidence_ledger.md)。
 
 可选 pgvector（仅在有 `vector` 扩展的镜像上验证；无 DSN 时测试跳过）：
 
@@ -356,7 +354,7 @@ pico/               轻量 AgentLoop、上下文、会话态、记忆与评测�
 corecoder/          科研工具、能力路由、Skill/Wiki 沉淀及 benchmark adapter
 benchmarks/         固定工程资格集、fixture 与 replay case
 tests/              单元、集成、回放及确定性回归测试
-artifacts/          可公开复核的小型指标证据
+artifacts/          本地评测产物输出目录（指标证据不入库）
 docs/               架构、边界、复现说明与设计记录
 scripts/            安全检查、benchmark 和记忆评测脚本
 ~~~

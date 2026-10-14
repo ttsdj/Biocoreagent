@@ -1,4 +1,4 @@
-"""Search-and-replace file editing (Claude Code's key innovation).
+"""Search-and-replace file editing.
 
 The core idea: instead of sending whole-file rewrites or line-number patches,
 the LLM specifies an *exact* substring to find and its replacement. The

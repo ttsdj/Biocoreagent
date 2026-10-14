@@ -1,12 +1,6 @@
 """Multi-layer context compression.
 
-Claude Code uses a 4-layer strategy:
-  1. HISTORY_SNIP   - trim old tool outputs to a one-line summary
-  2. Microcompact   - LLM-powered summary of old turns (cached)
-  3. CONTEXT_COLLAPSE - aggressive compression when nearing hard limit
-  4. Autocompact    - periodic background compaction
-
-CoreCoder implements the same idea in 3 layers:
+This module implements a 3-layer strategy:
   Layer 1 (tool_snip)   - replace verbose tool results with truncated versions
   Layer 2 (summarize)   - LLM-powered summary of old conversation
   Layer 3 (hard_collapse) - last resort: drop everything except summary + recent
@@ -94,8 +88,8 @@ class ContextManager:
     def _snip_tool_outputs(messages: list[dict]) -> bool:
         """Layer 1: Truncate tool results over 1500 chars to their first/last lines.
 
-        This mirrors Claude Code's HISTORY_SNIP which replaces old tool outputs
-        with a one-line summary to reclaim context space.
+        Old tool outputs are replaced with a compact summary to reclaim
+        context space.
         """
         changed = False
         for m in messages:

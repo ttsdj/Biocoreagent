@@ -1,6 +1,6 @@
 """Shell command execution with safety checks.
 
-Claude Code's BashTool is 1,143 lines. This is the distilled version:
+Features:
 - Output capture with truncation (head+tail preserved)
 - Timeout support
 - Dangerous command detection
@@ -15,7 +15,7 @@ from ..audit import AuditLogger
 from ..events import EventType
 from ..policy import PolicyDecision, evaluate_command
 
-# track cwd across commands (Claude Code does this too)
+# track cwd across commands
 _cwd: str | None = None
 
 # patterns that could wreck the filesystem or leak secrets

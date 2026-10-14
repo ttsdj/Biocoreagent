@@ -5,6 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "BiocoreagentV2.0"
 version = "2.0.0a2"
+authors = [{ name = "ttsdj", email = "chengzhideng1@gmail.com" }]
 description = "Auditable research-oriented coding agent harness with bioinformatics workflow routing"
 readme = "README.md"
 requires-python = ">=3.10"

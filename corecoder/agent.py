@@ -1,6 +1,6 @@
 """Core agent loop.
 
-This is the heart of CoreCoder.  The pattern is simple:
+The pattern is simple:
 
     user message -> LLM (with tools) -> tool calls? -> execute -> loop
                                       -> text reply? -> return to user
@@ -301,9 +301,7 @@ class Agent:
     def _exec_tools_parallel(self, tool_calls, on_tool=None) -> list[str]:
         """Run multiple tool calls concurrently using threads.
 
-        This is inspired by Claude Code's StreamingToolExecutor which starts
-        executing tools while the model is still generating.  We simplify to:
-        when the model returns N tool calls at once, run them in parallel.
+        When the model returns N tool calls at once, run them in parallel.
         """
         for tc in tool_calls:
             if on_tool:

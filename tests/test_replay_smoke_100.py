@@ -1,12 +1,10 @@
 """Replay smoke suite 的真值测试。
 
-对应简历声明「100 条 Replay Smoke 用例通过率 100%」。
-
 关键点：这 100 条**不是**把 Scorecard 的 100 分满分当成“100 条用例”，而是：
 - 生成器（scripts/generate_replay_case_suite.py）原子性地产出 100 个 ready case；
 - 每条 case 的 fake_outputs.json 会真实驱动 Pico 工具循环（list_files / read_file /
   search / write_file），真的在 workspace 里产生可验证产物；
-- 用 `run_suite_deterministic` 跑完后，scorecard 的 `passed == 100` 字面成立、可复现。
+- 用 `run_suite_deterministic` 跑完后，scorecard 的通过数与用例总数一致、可复现。
 
 改 case 请先改生成器再重跑，不要直接改生成出来的 case.json / fake_outputs.json。
 """

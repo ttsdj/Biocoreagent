@@ -6,8 +6,10 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 # The docs/ directory is gitignored (user's explicit "忽略全部docs" decision), so a
-# fresh clone has no docs.  These tests assert on the resume/ledger content; when that
-# content is absent they must skip cleanly rather than hard-fail the committed suite.
+# fresh clone has no docs.  Metric artifacts are no longer committed either (claims
+# were dequantified from the repo).  These tests assert on the resume/ledger content
+# and artifacts; when that content is absent they must skip cleanly rather than
+# hard-fail the committed suite.
 RESUME_DOC = REPO_ROOT / "docs" / "resume" / "biocoreagent_resume_star.md"
 LEDGER_DOC = REPO_ROOT / "docs" / "claim_evidence_ledger.md"
 
@@ -25,11 +27,9 @@ def test_resume_metrics_artifact_matches_documented_claims():
     graph_scorecard_path = REPO_ROOT / "artifacts" / "research-graph-curated-v1.json"
 
     _skip_if_missing(resume_path)
-    assert metrics_path.is_file()
-    assert harness_path.is_file()
+    for artifact in (metrics_path, harness_path, memory_scorecard_path, graph_scorecard_path):
+        _skip_if_missing(artifact)
     assert resume_path.is_file()
-    assert memory_scorecard_path.is_file()
-    assert graph_scorecard_path.is_file()
 
     metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
     harness = json.loads(harness_path.read_text(encoding="utf-8"))
@@ -101,6 +101,8 @@ def test_claim_evidence_ledger_matches_artifacts():
     # 权威 ledger 作为全仓库唯一真值来源,必须与 artifacts 关键数字一致,且不残留旧口径。
     ledger_path = LEDGER_DOC
     _skip_if_missing(ledger_path)
+    _skip_if_missing(REPO_ROOT / "artifacts" / "resume-metrics-v1.json")
+    _skip_if_missing(REPO_ROOT / "artifacts" / "memory-recall-synthetic-v1.json")
     ledger = ledger_path.read_text(encoding="utf-8")
 
     # 真值标记必须出现在权威表里

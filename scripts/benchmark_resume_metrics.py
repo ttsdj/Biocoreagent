@@ -405,7 +405,7 @@ def build_report(payload: dict) -> str:
             "- Memory metrics are a controlled retrieval correctness suite with explicit markers; they are not an open-domain semantic QA score.",
             "- Context correctness means current-request/latest-evidence retention and budget compliance, not LLM answer accuracy.",
             "- BixBench uses the local runner's direct/local verifier. No official external LLM judge score is claimed.",
-            "- The 44% baseline is the initial BioCoreAgent Verified-50 run, not a raw foundation-model score.",
+            "- The Verified-50 baseline is the initial BioCoreAgent run, not a raw foundation-model score.",
             "",
             "## Evidence Files",
             "",

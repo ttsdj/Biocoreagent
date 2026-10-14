@@ -1,4 +1,4 @@
-"""Sub-agent spawning (inspired by Claude Code's AgentTool, 1397 lines).
+"""Sub-agent spawning.
 
 The idea: for complex sub-tasks, spawn an independent agent with its own
 conversation history and tool access. This lets the main agent delegate
